@@ -1,0 +1,5 @@
+.LogArea { font: 1.2em Monospace; white-space: pre; color: #333; line-height: .8em; }
+.LogArea .pass { color: #050; }
+.LogArea .fail { color: #b00; }
+.LogArea .time { font-size: .8em; display: block; color: #666; }
+.LogArea p { margin: .6em 0; }

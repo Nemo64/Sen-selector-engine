@@ -1,0 +1,260 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<link rel="stylesheet" type="text/css" href="Test.css" />
+		<title></title>
+		<script type="text/javascript" src="Test.js"></script>
+		<script type="text/javascript" src="../Sen.js"></script>
+		<script type="text/javascript">
+			t = new Testsuit();
+			t.iniHelper = function (testObj) {
+				var pres = testObj.getElementsByTagName("pre");
+				return [
+					testObj.getElementsByTagName("div")[0],
+					pres[pres.length-1]
+				];
+			}
+		</script>
+	</head>
+	<body lang="en">
+		<input type="submit" value="open Firebug" onclick="var s=document.createElement('script');s.src='https://getfirebug.com/firebug-lite.js';document.getElementsByTagName('head')[0].appendChild(s)" />
+		<fieldset id="t1">
+			<div>
+				<ul>
+					<li id="foo" class="bar">li#foo.bar</li>
+					<li>li
+						<span>span</span>
+					</li>
+					<li>li<a href="Test.html">a[href="Test.html"]:local-link</a><a href="/">a[href="/"]:local-link(0)</a></li>
+					<li data-attr="test">li[data-attr="test"]</li>
+					<li class="foo bar">li.foo.bar</li>
+				</ul>
+				<form action="./" method="GET">
+					<input type="hidden" name="myBrotherIsAHorse" value="iKnowWhoYouAre" />
+					<input type="text" name="anInput" value="input[name=anInput][type=text]" />
+					<input type="checkbox" name="checkit" value="1" id="checkbox" />
+					<label for="checkbox">label[for="checkbox"]</label>
+				</form>
+			</div>
+			<pre></pre>
+			<input type="submit" onclick="this.parentNode.removeChild( this );t.run();" value="run test" />
+		</fieldset>
+		<script type="text/javascript">
+			var ta = document.getElementById("t1"),
+				t1 = new t.Test(ta),
+				area = t1.testIn,
+				ul = area.getElementsByTagName("ul")[0],
+				li = area.getElementsByTagName("li"),
+				a  = area.getElementsByTagName("a"),
+				form  = area.getElementsByTagName("form")[0],
+				input = area.getElementsByTagName("input"),
+				span  = area.getElementsByTagName("span")[0];
+			
+			// the tests
+			t1.addTest(
+				"`ul`",
+				function () { return selector("ul", this)[0]; },
+				ul
+			);
+			t1.addTest(
+				"`li`",
+				function () { return selector("li", this).length; },
+				li.length
+			);
+			t1.addTest(
+				"`#foo`",
+				function () { return selector("#foo", this)[0]; },
+				li[0]
+			);
+			t1.addTest(
+				"`.foo`",
+				function () { return selector(".foo", this)[0]; },
+				li[4]
+			);
+			t1.addTest(
+				"`li.bar.foo`",
+				function () { return selector("li.bar.foo", this)[0]; },
+				li[4]
+			);
+			t1.addTest(
+				"`.bar`",
+				function () { return selector(".bar", this).length; },
+				2
+			);
+			t1.addTest(
+				"`li#foo`",
+				function () { return selector("li#foo", this)[0]; },
+				li[0]
+			);
+			t1.addTest(
+				"`li#foo.bar`",
+				function () { return selector("li#foo.bar", this)[0]; },
+				li[0]
+			);
+			
+			
+			t1.addTest(
+				"`ul > li`",
+				function () { return selector("ul > li", this).length; },
+				li.length
+			);
+			t1.addTest(
+				"`li:first-child + li span`",
+				function () { return selector("li:first-child + li span", this)[0]; },
+				span
+			);
+			t1.addTest(
+				"`li:first-child ~ li`",
+				function () { return selector("li:first-child ~ li", this).length; },
+				li.length - 1
+			);
+			
+			
+			t1.addTest(
+				"`[data-attr=\"test\"]`",
+				function () { return selector("[data-attr=\"test\"]", this)[0]; },
+				li[3]
+			);
+			t1.addTest(
+				"`$li > span`",
+				function () { return selector("$li > span", this)[0]; },
+				li[1]
+			);
+			
+			
+			t1.addTest(
+				"`a:any-link`",
+				function () { return selector("a:any-link", this).length; },
+				2
+			);
+			t1.addTest(
+				"`a:local-link`",
+				function () { return selector("a:local-link", this)[0]; },
+				a[0]
+			);
+			t1.addTest(
+				"`a:local-link(0)`",
+				function () { return selector("a:local-link(0)", this)[1]; },
+				a[1]
+			);
+			
+			t1.addTest(
+				"`li:target` without hash",
+				function () { return selector("li:target", this).length; },
+				0, function () { location.hash = "#"; } // prepare
+			);
+			t1.addTest(
+				"`li:target` with hash",
+				function () { return selector("li:target", this)[0]; },
+				li[0], function () { location.hash = "#foo"; } // prepare
+			);
+			
+			t1.addTest(
+				"`input:focus` while focused",
+				function () { return selector("input:focus", this)[0]; },
+				input[1], function () { input[1].focus(); } // prepare
+			);
+			t1.addTest(
+				"`input:focus` while bured",
+				function () { return selector("input:focus", this).length; },
+				0, function () { input[1].blur(); } // prepare
+			);
+			
+			t1.addTest(
+				"`html:root` is root element",
+				function () { return selector("html:root")[0]; },
+				document.documentElement
+			);
+			t1.addTest(
+				"`ul:root` will never be root",
+				function () { return selector("ul:root").length; },
+				0
+			);
+			
+			t1.addTest(
+				"`li:first-child`",
+				function () { return selector("li:first-child", this)[0]; },
+				li[0]
+			);
+			t1.addTest(
+				"`li:last-child`",
+				function () { return selector("li:last-child", this)[0]; },
+				li[4]
+			);
+			t1.addTest(
+				"`span:only-child`",
+				function () { return selector("span:only-child", this)[0]; },
+				span
+			);
+			t1.addTest(
+				"`li:nth-child(3)`",
+				function () { return selector("li:nth-child(3)", this)[0]; },
+				li[2]
+			);
+			t1.addTest(
+				"`li:nth-child(2n+1)`",
+				function () { return selector("li:nth-child(2n+1)", this).length; },
+				3
+			);
+			t1.addTest(
+				"`form:nth-of-type(1)`",
+				function () { return selector("form:nth-of-type(1)", this)[0]; },
+				form
+			);
+			t1.addTest(
+				"`span:empty`",
+				function () { return selector("span:empty", this).length; },
+				0
+			);
+			
+			t1.addTest(
+				"`input:enabled` there is one hidden input",
+				function () { return selector("input:enabled", this).length; },
+				input.length, function () { input[1].disabled = false; }
+			);
+			t1.addTest(
+				"`input:disabled` now the textinput is disabled",
+				function () { return selector("input:disabled", this)[0]; },
+				input[1], function () { input[1].disabled = true; } // prepare
+			);
+			
+			t1.addTest(
+				"`input:checked` not checked yet",
+				function () { return selector("input:checked", this).length; },
+				0, function () { input[2].checked = false; }
+			);
+			t1.addTest(
+				"`input:checked` is now checked",
+				function () { return selector("input:checked", this)[0]; },
+				input[2], function () { input[2].checked = true; } // prepare
+			);
+			
+			t1.addTest(
+				"`span:lang(en)`",
+				function () { return selector("span:lang(en)", this)[0]; },
+				span
+			);
+			t1.addTest(
+				"`span:dir(ltr)`",
+				function () { return selector("span:dir(ltr)", this)[0]; },
+				span
+			);
+			t1.addTest(
+				"`ul:not(:empty)`",
+				function () { return selector("ul:not(:empty)", this)[0]; },
+				ul
+			);
+			t1.addTest(
+				"`li:matches(#foo, .bar)` this should be done with -webkit-any/-moz-any",
+				function () { return selector("li:matches(#foo, .bar)", this).length; },
+				2
+			);
+			t1.addTest(
+				"`li:matches($ span, [data-attr=test])` this is to complex for normal browsers",
+				function () { return selector("li:matches($ span, [data-attr=test])", this).length; },
+				2
+			);
+			t1.finish();
+		</script>
+	</body>
+</html>
