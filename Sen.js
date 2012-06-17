@@ -65,11 +65,11 @@ selector["filterElements"] = function (elements) {
 // This won't be in the min version and is just for the compiler
 /** @typedef {Object.<string, Array.<RegExp>>} */
 selector.Attr;
-/** @typedef {{ sn: number, v: * }} */
+/** @typedef {{ each: function( Node, *, string ):boolean, get: selector.Getter, pre: function( string, selector.Part ), vendorNames: Array.<string>, testValues: Array.<string>, testHTML: string, testResult: string, support: number, supportedName: string }} */
 selector.Pseudo;
 /** @typedef {function(*, Node, Node):(Array.<Node>|NodeList)} */
 selector.Getter;
-/** @typedef {{ relation: string, tagName: string, id: (string|null), cls: Array.<string>, attr: selector.Attr, searchName: (string|null), pseudo: Object.<string, Array.<selector.Pseudo>>, hasToContain: (selector.Selector|null), getElementMethodCount: number, prefereNativeSelector: boolean, nativeFailed: boolean }} */
+/** @typedef {{ relation: string, tagName: string, id: (string|null), cls: Array.<string>, attr: selector.Attr, searchName: (string|null), pseudo: Object.<string, Array.<*>>, hasToContain: (selector.Selector|null), getElementMethodCount: number, prefereNativeSelector: boolean, nativeFailed: boolean }} */
 selector.Part;
 /** @typedef {Array.<selector.Part>|{ string: string, fullsupport: boolean, useNative: boolean, getter: selector.Getter, getterValue: * }} */
 selector.Selector;
@@ -199,12 +199,12 @@ function escapeForRx (string) {
  */
 function nthParse (value) {
 	value = value.toLowerCase();
-	var p = (value === "odd" ? "2n+1" : (value === "even" ? "2n+0": value) ).match( RxNthV );
+	var p = (value === "odd" ? "2n+1" : (value === "even" ? "2n+0" : value) ).match( RxNthV );
 	if (!p) throw "bad nth value: " + value;
 	return { nt: parseInt( p[1], 10 )||0, begin: parseInt( p[2], 10 )||0 };
 };
 /**
- * for checking of an element matches an nth(?)
+ * for checking if an element matches an nth(?)
  * @param {Node} element                         The element to check
  * @param {{ nt: number, begin: number }} value  The value array from nthParse
  * @param {boolean} forward                      If the loop should go forward or backwards
@@ -304,7 +304,7 @@ function nthWithPart (value, part) {
  * The testHTML variable contains html that will be used for the test
  * The testResult variable has to contain a selector string that works directly with the querySelector. Note that the result can only be one element.
  *     If no result is expected pass null
- * @type Object.<string, { each: function( Node, *, string ):boolean, get: selector.Getter, pre: function( string, selector.Part ), vendorNames: Array.<string>, testValues: Array.<string>, testHTML: string, testResult: string, support: number, supportedName: string }>
+ * @type Object.<string, selector.Pseudo>
  */
 var pseudos = selector["pseudo"] = {
 	"any-link": {
@@ -571,10 +571,15 @@ function testSelect (selector, localTestDiv) {
 	try { return (localTestDiv || testDiv).querySelector( selector ); }
 	catch(e) { return false; }
 }
-
+/**
+ * gets the pseudo object so it is an equivalent to pseudos[pseudoname] except it checks the support first.
+ * Also it throws a string error so it is for made for the parsing function.
+ * @param {string} pname  the name of the pseudo to search
+ * @return {selector.Pseudo}
+ */
 function getPseudo (pname) {
 	// if the pseudo isn't known
-	if (!(pname in pseudos)) return null;
+	if (!(pname in pseudos)) throw "unknown pseudo '" + pname + "'";
 
 	// get the pseudo
 	var pseudo = pseudos[pname];
