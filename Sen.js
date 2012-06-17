@@ -1,4 +1,4 @@
-/** @license under MIT-License */
+/** @license under MIT-License, see: https://raw.github.com/Nemo64/Sen/master/LICENSE */
 
 ////////////////////////
 // EXTERNAL FUNCTIONS //
