@@ -1,4 +1,4 @@
-/** @license under MIT-License, see: https://raw.github.com/Nemo64/Sen/master/LICENSE */
+/** @license under MIT-License, see: https://raw.github.com/Nemo64/Sen-selector-engine/master/LICENSE */
 
 ////////////////////////
 // EXTERNAL FUNCTIONS //
@@ -8,19 +8,19 @@
  * The main selector for selecting elements. (wohoo!)
  * Also this function will be the target for all other external functions.
  * @export
- * @param {string} selectorString			The selector.
- * @param {Node|Array.<Node>=} searchIn		The element(s) to search in. (optional)
+ * @param {string} selectorString						The selector.
+ * @param {Node|Array.<Node>|NodeList=} searchIn		The element(s) to search in. (optional)
  * @return {Array.<Node>} The found Elements.
  */
 function selector(selectorString, searchIn) {
 	return doSelect( selectorParse(selectorString), searchIn || document );
 };
 /**
- * Test if an element is in the document
+ * Tests if an element matches the selector.
  * @export
- * @param {string} selectorString	The selector.
- * @param {Node} toTest				The element to check.
- * @param {Node|Array.<Node>} origin
+ * @param {string} selectorString			The selector.
+ * @param {Node} toTest						The element to check.
+ * @param {Node|Array.<Node>|NodeList} origin
  * @return {boolean} True if the element matches
  */
 selector["test"] = function (selectorString, toTest, origin) {
@@ -36,8 +36,8 @@ selector["test"] = function (selectorString, toTest, origin) {
 /**
  * Reduces the given elementList by the given selector.
  * @export
- * @param {string} selectorString				The selector.
- * @param {Array.<Node>|NodeList} elementList	The element(s) to filter.
+ * @param {string} selectorString					The selector.
+ * @param {Array.<Node>|NodeList} elementList		The element(s) to filter.
  * @return {Array.<Node>} The matching Elements.
  */
 selector["filter"] = function (selectorString, elementList) {
@@ -45,8 +45,8 @@ selector["filter"] = function (selectorString, elementList) {
 	return filterSelector( selectorParse(selectorString), filterElements(elementList) );
 };
 /**
- * returns an array! with only the elements (nodeType == 1) of the given one.
- * This is the external version.
+ * returns an array! which contains all elemnets from the given one. (nodeType === 1)
+ * This is the external version that checks the type.
  * @export
  * @param {Array.<*>|NodeList} elements		The list of Nodes to filter
  * @return {Array.<Node>} The filtered result
@@ -88,7 +88,7 @@ function inDocument(node) {
 }
 /**
  * Returns an array! with only the elements (nodeType == 1) of the given one
- * @param {Array.<Node>|NodeList} elements	The list of Nodes to filter
+ * @param {Array.<*>|NodeList} elements		The list of Nodes to filter
  * @return {Array.<Node>} The filtered result
  */
 function filterElements(elements) {
@@ -905,9 +905,9 @@ function selectorParse (selectString) {
 
 /**
  * Selects elements in the document, on an element or a list of elements
- * @param {selector.Collection} selectors		The parsed selector to use.
- * @param {Array.<Node>|Node} searchOn			The element(s) to search on.
- * @param {string=} token						This string will be passed rekulsive.
+ * @param {selector.Collection} selectors				The parsed selector to use.
+ * @param {Array.<Node>|Node|NodeList} searchOn			The element(s) to search on.
+ * @param {string=} token								This string will be passed rekulsive.
  * @return {Array.<Node>} A list of matching elements
  */
 function doSelect (selectors, searchOn, token) {
@@ -1043,19 +1043,13 @@ function selectorTest (element, part, queried, token) {
 		if (part.id != null && element.id !== part.id) return false; // check id
 		if (part.tagName != null && part.tagName !== "*" && element.nodeName.toUpperCase() !== part.tagName) return false; // check tag name
 		
-		// get a list of classes
-		var classList = element.className ? element.className.split( RxSSplit ) : [];
-		// check every class for existence
-		for (var i = 0; i < part.cls.length; i++) {
-			var found = false;
-			var searchClass = part.cls[i];
-			// search for the class on the element
-			for (var c = 0; c < classList.length && !found; ++c) {
-				if (classList[c] === searchClass) {
-					found = true;
-				}
+		// check the classes
+		var elementClasses = " " + element.className + " ";
+		var searchClasses  = part.cls;
+		for (var i = 0; i < searchClasses.length; ++i) {
+			if (elementClasses.indexOf( " " + searchClasses[i] + " " ) >= 0) {
+				return false;
 			}
-			if (!found) return false; // if this class wasn't found return
 		}
 	}
 	// check attributes
@@ -1095,7 +1089,7 @@ function selectorTest (element, part, queried, token) {
  * Tests if an element matches an selector collection.
  * @param {selector.Collection} selectors	a parsed selector
  * @param {Node|null} sourceElement			the element to match
- * @param {Array|Node=} origins				the element that is before the selector (optional)
+ * @param {Array|Node|NodeList=} origins	the element that is before the selector (optional)
  * @param {boolean=} queried				if query selector was used some checks can be skipped (optional)
  * @param {string=} token					This string will be passed to all pseudo funcs.
  * @return {boolean} True if selector matches.
