@@ -1,5 +1,12 @@
 # Sen - Selector Engine
+## What is Sen
 This here is a JavaScript CSS selector engine that was build with the querySelector API in mind. That means that as much work as possible will be put onto the browsers selector engine and only the missing features will be emulated (if any).
+
+## Which browser is supported
+- Internet Explorer **6+**
+- Firefox **3+** (Firefox 2 only failes the :focus pseudo)
+- Chrome/Chromium **1+**
+- Opera **9+**
 
 # How do I get started
 ## compile the source
@@ -33,6 +40,7 @@ The attribute selector follows the specs. This means you can use those attribute
 - `[attr*="oba"]` would match fo**oba**r because it contains *oba*
 - `[attr^="foo"]` would also match **foo**bar because it begins with *foo*
 - `[attr$="bar"]` would also match foo**bar** because it ends with *bar*
+- `[attr]` would match any element that has the attribute *attr*
 
 This is still not all. Also the CSS 4 insensitive modifier is supported. `img[alt*="blue" i]` would match any image that has an alternative text that contains *blue*, *Blue* or *bLuE*.
 
