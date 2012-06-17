@@ -664,14 +664,14 @@ var RxRelate   = /^\s*([>+~]?)\s*/m;
 var RxName     = /^\*|^([\w-]|\\.)*/m;
 var RxId       = /^#(([\w-]|\\.)*)/m;
 var RxClass    = /^\.(([\w-]|\\.)*)/m;
-var RxPseudo   = /^:([\w-]*)\s*(\(([^()]*(\([^()]*(\([^()]*\))?\))?)\))?/m;
+var RxPseudo   = /^:([\w-]*)\s*(\((([^()]*|\(([^()]*|\([^()]*\))*\))*)\))*/m;
 var RxAttr     = /^\[(([\w-]|\\.)*)(([\^*$|]?)=(['"]([^\\'"]|\\.)*['"]|[\w-]*)(\s*i)?)?\]/m;
 var RxPreMod   = /^\$/m;
 var RxNextOne  = /^\s*,\s*/m;
 var RxSSplit   = /\s+/g;
 var RxIsQuote  = /^['"].*['"]$/m;
 var RxBorderMod= /^[\^*$]/m;
-var RxSkipOne  = /^\s*((\(([^()]*(\([^()]*(\([^()]*\))?\))?)\)|['"]([^\\'"]|\\.)*['"]|\\,|[^,])*)\s*/m;
+var RxSkipOne  = /^\s*((\((([^()]*|\(([^()]*|\([^()]*\))*\))*)\)|['"]([^\\'"]|\\.)*['"]|\\,|[^,])*)\s*/m;
 var RxATList   = { '':["^","$"], '*':["",""], '^':["^",""], '$':["","$"], '~':["(^| )","( |$)"], '|':["^","(-|$)"] };
 /**
  * Cached selectors
@@ -919,7 +919,7 @@ function selectorParse (selectString) {
 				selectors.pop(); // remove everything the loop has created for the defect selector
 			// if the thrown object is a string extend it and throw real error
 			} else if (typeof e === "string") {
-				throw SyntaxError(e + " selector: "+selectString); // throw SyntaxError
+				throw SyntaxError(e + " selector: '" + selectString + "'"); // throw SyntaxError
 			// else this isn't our error so just throw it further
 			} else throw e;
 		}

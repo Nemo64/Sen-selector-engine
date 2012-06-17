@@ -8,7 +8,7 @@ This here is a JavaScript CSS selector engine that was build with the querySelec
 - Chrome/Chromium **1+**
 - Opera **9.5+** (haven't found a working version of opera 9)
 
-# How do I get started
+# How do I get started?
 ## compile the source
 The best way is to run `compile.bat` on windows or `compile.sh` everywhere else. This will create a ~10 KB JavaScript file (4 KB later with GZip) named *Sen.min.js* . Just include it into the head of your document and you can start.
 
@@ -51,7 +51,7 @@ A huge part of Sen are pseudo selectors. Most of the CSS 3 pseudo selectors and 
 
 ###link pseudos
 - `:any-link` matches all links no matter if visited or not
-- `:local-link` matches links that lead to the current page but `:local-link(n)` would match all links where *n* url segments are the same. Example: the selector `:local-link(1)` would match */foo* on the page */foo/bar* but `:local-link(2)` would not
+- `:local-link` matches links that lead to the current page but `:local-link(n)` would match all links where *n* url segments are the same. Example: the selector `:local-link(1)` would match */foo* on the page */foo/bar* but `:local-link(2)` would not because the url has no */bar* segment.
 
 ### children selectors
 - `:first-child` matches if the element is the first child of it's parent.
@@ -90,4 +90,4 @@ A huge part of Sen are pseudo selectors. Most of the CSS 3 pseudo selectors and 
 
 ### selectors depending on selectors
 - `:not(selector)` matches all elements that don't match the selector inside the brackets.
-- `:matches(selector)` matches all elements that match the selector. The point of this is
+- `:matches(selector)` matches all elements that match the selector. You could do this for example: `:enabled:matches(input:matches([type=text], [type=password]), textarea)` to get all textinputs that are enabled
