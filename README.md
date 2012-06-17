@@ -29,10 +29,10 @@ Sometimes you want to select elements after an attribute for example if you look
 
 The attribute selector follows the specs. This means you can use those attribute selectors:
 
-- `[attr?"foobar"]` matches ***foobar*** and only *foobar*
-- `[attr*="oba"]` would match *fo**oba**r* because it contains *oba*
-- `[attr^="foo"]` would also match ***foo**bar* because it begins with *foo*
-- `[attr$="bar"]` would also match *foo**bar*** because it ends with *bar*
+- `[attr?"foobar"]` matches **foobar** and only *foobar*
+- `[attr*="oba"]` would match fo**oba**r because it contains *oba*
+- `[attr^="foo"]` would also match **foo**bar because it begins with *foo*
+- `[attr$="bar"]` would also match foo**bar** because it ends with *bar*
 
 This is still not all. Also the CSS 4 insensitive modifier is supported. `img[alt*="blue" i]` would match any image that has an alternative text that contains *blue*, *Blue* or *bLuE*.
 
@@ -41,38 +41,45 @@ The values can also be wrapped in single quotes and can also be ignored if the v
 ## pseudo selectors
 A huge part of Sen are pseudo selectors. Most of the CSS 3 pseudo selectors and even some CSS 4 pseudos are implemented and work even in IE 6+. Here is a list of all supported pseudo selectors:
 
+###link pseudos
 - `:any-link` matches all links no matter if visited or not
 - `:local-link` matches links that lead to the current page but `:local-link(n)` would match all links where *n* url segments are the same. Example: the selector `:local-link(1)` would match */foo* on the page */foo/bar* but `:local-link(2)` would not
 
+### children selectors
 - `:first-child` matches if the element is the first child of it's parent.
 - `:last-child` same but last child
 - `:only-child` only matches if there are no other siblings around it.
 - `:nth-child(n)` matches only specific children. The value *3* would match only the 3rd child. Also possible is *2n* which would match every 2nd child. This can even be more defined with *2n+1* which means every 2nd child beginning with 1. Also possible are the values *odd* and *even*.
 - `:nth-last-child` same as above except it counts from the bottom
 
+### typed children selectors
 - `:first-of-type` like *:first-child* but only counts elements with the same tag name.
 - `:last-of-type` same as above except last.
 - `:only-of-type` same as *:only-child* except with the same limitation as *first-of-type*
 - `:nth-of-type` like *:nth-child* but only counts elements with the same tag name
 - `:nth-last-of-type` same as above excepts it counts from the bottom.
 
+### matching children selectors
 - `:first-match` like *:first-child* but only counts elements that match the selector part.
 - `:last-match` like *:first-match* except last
 - `:only-match` only matches if there are no other siblings that would match the selector part.
 - `:nth-match` same as *:nth-child* except it only counts elements that match the selector part.
 - `:nth-last-match` same as above except it counts from the bottom.
 
+### input selectors
 - `:disabled` matches inputs that aren't disabled.
 - `:enabled` matches disabled inputs.
 - `:indeterminate` matches checkboxes that are indeterminate.
 - `:checked` matches checkboxes that are checked and options that are selected.
 - `:focus` matches elements that have the focus.
 
+### other selectors
 - `:empty` matches elements that have nothing inside them. that you can give multiple selectors like *:matches(.foo, .bar)*.
 - `:target` matches elements that are the target of the current location hash.
 - `:root` matches only the documentElement which in the case of html is always the *html* element.
 - `:lang(en)` matches elements after there language defined by the lang="en" attribute.
 - `:dir(ltr)` matches elements that have text that has the direction *ltr* or *rtl*
 
+### selectors depending on selectors
 - `:not(selector)` matches all elements that don't match the selector inside the brackets.
 - `:matches(selector)` matches all elements that match the selector. The point of this is
