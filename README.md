@@ -2,11 +2,11 @@
 ## What is Sen?
 This here is a JavaScript CSS selector engine that was build with the querySelector API in mind. That means that as much work as possible will be put onto the browsers selector engine and only the missing features will be emulated (if any).
 
-## Which browsers are supported
+## Which browsers are supported?
 - Internet Explorer **6+**
-- Firefox **3+** (Firefox 2 only failes the :focus pseudo)
+- Firefox **3+** (Firefox 1.5+ only fails on the :focus pseudo)
 - Chrome/Chromium **1+**
-- Opera **9+**
+- Opera **9.5+** (haven't found a working version of opera 9)
 
 # How do I get started
 ## compile the source
