@@ -75,8 +75,8 @@ A huge part of Sen are pseudo selectors. Most of the CSS 3 pseudo selectors and 
 - `:nth-last-match` same as above except it counts from the bottom.
 
 ### input selectors
-- `:disabled` matches inputs that aren't disabled.
-- `:enabled` matches disabled inputs.
+- `:disabled` matches disabled inputs.
+- `:enabled` matches inputs that aren't disabled.
 - `:indeterminate` matches checkboxes that are indeterminate.
 - `:checked` matches checkboxes that are checked and options that are selected.
 - `:focus` matches elements that have the focus.
