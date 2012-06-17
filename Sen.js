@@ -145,7 +145,7 @@ function err (message) {
  * @param {string=} elementVersion	the not so cross browser element version
  */
 function checkElementVersion (nodeVersion, elementVersion) {
-	if (elementVersion == null) elementVersion = nodeVersion.replace(/[A-Z]/, "Element$&");
+	if (elementVersion == null) elementVersion = nodeVersion.replace( /[A-Z]/, "Element$&" );
 	return elementVersion in testDiv ? elementVersion : nodeVersion;
 }
 
@@ -182,7 +182,7 @@ var RxDangerousPseudo = /^(matches|not)$/m;
  * @return {string} The unescaped string
  */
 function unescapeUse (string) {
-	return string.replace(RxUnEscape, "$1");
+	return string.replace( RxUnEscape, "$1" );
 }
 /**
  * Escapes a string for the use in regular expression.
@@ -190,25 +190,25 @@ function unescapeUse (string) {
  * @return {string} The escaped string
  */
 function escapeForRx (string) {
-	return string.replace(RxRxEscape, "\\$&");
+	return string.replace( RxRxEscape, "\\$&" );
 }
 /**
  * for parsing odd/even/2n+1 etc.
  * @param {string} value
- * @return {{ v: Array.<number> }}
+ * @return {{ nt: number, begin: number }}
  */
 function nthParse (value) {
 	value = value.toLowerCase();
 	var p = (value === "odd" ? "2n+1" : (value === "even" ? "2n+0": value) ).match( RxNthV );
-	if (!p) throw "invalid nth value: "+value;
-	return { "v": [parseInt(p[1],10)||0, parseInt(p[2],10)||0] };
+	if (!p) throw "bad nth value: " + value;
+	return { nt: parseInt( p[1], 10 )||0, begin: parseInt( p[2], 10 )||0 };
 };
 /**
  * for checking of an element matches an nth(?)
- * @param {Node} element						The element to check
- * @param {Array.<number>} value				The value array from nthParse
- * @param {boolean} forward						If the loop should go forward or backwards
- * @param {function(Node):boolean=} matches		This function checkes if the element matches
+ * @param {Node} element							The element to check
+ * @param {{ nt: number, begin: number }} value		The value array from nthParse
+ * @param {boolean} forward							If the loop should go forward or backwards
+ * @param {function(Node):boolean=} matches			This function checkes if the element matches
  * @return {boolean} True if matches.
  */
 function nthCheck (element, value, forward, matches) {
@@ -221,9 +221,9 @@ function nthCheck (element, value, forward, matches) {
 			++count;
 			// if the element is the element we want to match
 			if (child === element) {
-				return value[0]
-					? (((count - value[1]) % value[0]) === 0) // if this one repeats
-					: (count === value[1]); // else check if it is
+				return value.nt
+					? (((count - value.begin) % value.nt) === 0) // if this one repeats
+					: (count === value.begin); // else check if it is
 			}
 		}
 		// get the next element
@@ -235,10 +235,10 @@ function nthCheck (element, value, forward, matches) {
 /**
  * preParser for selector based pseudos
  * @param {string} value
- * @return {{ sn: number, v: * }}
+ * @return {{ sn: number, selectors: selector.Collection }}
  */
 function psParse (value) {
-	var selectors = selectorParse(value);
+	var selectors = selectorParse( value );
 	var sn = selectors.length > 1 ? 2:1;
 	
 	// loop selectors for support check (for the selector we are doing this for)
@@ -251,14 +251,37 @@ function psParse (value) {
 			// loop pseudos
 			for (var pname in selector[j].pseudo) {
 				// if a dangerous pseudo was used
-				if (RxDangerousPseudo.test(pname)) {
+				if (RxDangerousPseudo.test( pname )) {
 					sn = 4; break; // supportneed is 4
 				}
 			}
 		}
 	}
-	return { "sn":sn , "v":selectors };
+	return { "sn":sn , selectors: selectors };
 };
+/**
+ * clones a selector part for the match pseudos
+ * @param {selector.Part} part
+ * @return {selector.Part}
+ */
+function clonePart (part) {
+	var newPart = {};
+	// clone everything except pseudos and classes
+	for (var name in part) {
+		var prop = part[name];
+		if (typeof prop !== "object" || prop == null) {
+			newPart[name] = prop;
+		}
+	}
+	// now clone classes
+	newPart.cls = part.cls.slice();
+	// now clone pseudos
+	newPart.pseudo = {};
+	for (var name in part.pseudo) {
+		newPart.pseudo[name] = part.pseudo[name].slice();
+	}
+	return /** @type {selector.Part} */ newPart;
+}
 /**
  * Pseudo selector objects with all informations needed for the pseudo.
  * The each method gets called on every element that has to be checked with the pseudo.
@@ -269,7 +292,7 @@ function psParse (value) {
  * The testHTML variable contains html that will be used for the test
  * The testResult variable has to contain a selector string that works directly with the querySelector. Note that the result can only be one element.
  *     If no result is expected pass null
- * @type Object.<string, { each: function( Node, *, string, selector.Part ):boolean, get: selector.Getter, pre: function(string), vendorNames: Array.<string>, testValues: Array.<string>, testHTML: string, testResult: string, support: number, supportedName: string }>
+ * @type Object.<string, { each: function( Node, *, string ):boolean, get: selector.Getter, pre: function( string, selector.Part ), vendorNames: Array.<string>, testValues: Array.<string>, testHTML: string, testResult: string, support: number, supportedName: string }>
  */
 var pseudos = selector["pseudo"] = {
 	"any-link": {
@@ -280,14 +303,13 @@ var pseudos = selector["pseudo"] = {
 	},
 	"local-link": {
 		"each": function (element, value) {
-			return value && element.href && value.test(element.href);
+			return element.href && value.Rx.test( element.href );
 		},
 		"pre": function (value) {
-			var p = location.href.match(RxMainUrl)[1].split("/");
-			var l = p.length;
-			value = value === "" ? l : parseInt(value,10);
-			if (l < value) throw false; // if there are more url parts wanted than the url has this selector is dead
-			return {"v": RegExp( ":\/{2,3}"+escapeForRx(p.slice(0,value).join("/")) ) };
+			var parts = location.href.match( RxMainUrl )[1].split("/");
+			value = value === "" ? parts.length : parseInt( value, 10 );
+			if (parts.length < value) throw false; // if there are more url parts wanted than the url has this selector is dead
+			return { Rx: RegExp( ":\/{2,3}" + escapeForRx(parts.slice(0, value).join("/")) ) };
 		}
 	},
 	
@@ -307,19 +329,19 @@ var pseudos = selector["pseudo"] = {
 	},
 	"only-child": {
 		"each": function (element) {
-			return filterElements(element.parentNode[children]).length === 1;
+			return filterElements( element.parentNode[children] ).length === 1;
 		}
 	},
 	"nth-child": {
 		"each": function (element, value) {
-			return nthCheck(element, value, true);
+			return nthCheck( element, value, true );
 		},
 		"pre": nthParse,
 		testValues: ["2n+1"]
 	},
 	"nth-last-child": {
 		"each": function (element, value) {
-			return nthCheck(element, value, false);
+			return nthCheck( element, value, false );
 		},
 		"pre": nthParse,
 		testValues: ["2n+1"]
@@ -355,7 +377,7 @@ var pseudos = selector["pseudo"] = {
 	"nth-of-type": {
 		"each": function (element, value) {
 			var name = element.nodeName;
-			return nthCheck(element, value, true, function (child) { return child.nodeName === name });
+			return nthCheck( element, value, true, function (child) { return child.nodeName === name } );
 		},
 		"pre": nthParse,
 		testValues: ["2n+1"]
@@ -363,7 +385,7 @@ var pseudos = selector["pseudo"] = {
 	"nth-last-of-type": {
 		"each": function (element, value) {
 			var name = element.nodeName;
-			return nthCheck(element, value, false, function (child) { return child.nodeName === name });
+			return nthCheck( element, value, false, function (child) { return child.nodeName === name } );
 		},
 		"pre": nthParse,
 		testValues: ["2n+1"]
@@ -372,39 +394,51 @@ var pseudos = selector["pseudo"] = {
 	
 	// MATCH CHILDREN
 	"first-match": {
-		"each": function (element, value, token, part) {
-			if (token.indexOf("n") >= 0) return true; // if we are already in an selection for the first match
-			while (element = element[prevSibling]) if (element.nodeType === 1 && selectorTest( element, part, false, token+"n" )) return false;
+		"each": function (element, value) {
+			while (element = element[prevSibling]) if (element.nodeType === 1 && selectorTest( element, value.part )) return false;
 			return true;
+		},
+		"pre": function (value, part) {
+			return { part: clonePart( part ) }
 		}
 	},
 	"last-match": {
-		"each": function (element, value, token, part) {
-			if (token.indexOf("n") >= 0) return true; // if we are already in an selection for the last match
-			while (element = element[nextSibling]) if (element.nodeType === 1 && selectorTest( element, part, false, token+"n" )) return false;
+		"each": function (element, value) {
+			while (element = element[nextSibling]) if (element.nodeType === 1 && selectorTest( element, value.part )) return false;
 			return true;
+		},
+		"pre": function (value, part) {
+			return { part: clonePart( part ) }
 		}
 	},
 	"only-match": {
-		"each": function (element, value, token, part) {
-			if (token.indexOf("n") >= 0) return true;
-			return filterSelector( [[part]], filterElements(element.parentNode[children]), null, false, token+"n" ).length === 1;
+		"each": function (element, value) {
+			return filterSelector( [[value.part]], filterElements(element.parentNode[children]) ).length === 1;
+		},
+		"pre": function (value, part) {
+			return { part: clonePart( part ) }
 		}
 	},
 	"nth-match": {
-		"each": function (element, value, token, part) {
-			if (token.indexOf("n") >= 0) return true;
-			return nthCheck(element, value, true, function (child) { return selectorTest( child, part, false, token+"n" ) });
+		"each": function (element, value) {
+			return nthCheck( element, value, true, function (child) { return selectorTest( child, value.part ) } );
 		},
-		"pre": nthParse,
+		"pre": function (value, part) {
+			var result = nthParse( value );
+			result.part = clonePart( part );
+			return result;
+		},
 		testValues: ["2n+1"]
 	},
 	"nth-last-match": {
-		"each": function (element, value, token, part) {
-			if (token.indexOf("n") >= 0) return true;
-			return nthCheck(element, value, false, function (child) { return selectorTest( child, part, false, token+"n" ) });
+		"each": function (element, value) {
+			return nthCheck( element, value, false, function (child) { return selectorTest( child, value.part ) } );
 		},
-		"pre": nthParse,
+		"pre": function (value, part) {
+			var result = nthParse( value );
+			result.part = clonePart( part );
+			return result;
+		},
 		testValues: ["2n+1"]
 	},
 	
@@ -464,17 +498,17 @@ var pseudos = selector["pseudo"] = {
 	},
 	"not": {
 		"each": function (element, value) {
-			return !selectorMatch(value, element);
+			return !selectorMatch( value.selectors, element );
 		},
 		"pre": psParse,
 		testValues: ["a","a,a","a a",":not(a)"]
 	},
 	"matches": {
 		"each": function (element, value) {
-			return selectorMatch(value, element);
+			return selectorMatch( value.selectors, element );
 		},
 		"get": function (value, ownerDocument, searchOn) {
-			return doSelect( value, searchOn );
+			return doSelect( value.selectors, searchOn );
 		},
 		"pre": psParse,
 		testValues: ["a","a,a","a a",":not(a)"],
@@ -746,13 +780,14 @@ var parseFuncs = {
 		var pseudo = getPseudo( name );
 		
 		// use the pseudo parse function if there is any or just crate a pseudo object with basic infos
-		var pseudoObj = pseudo["pre"] ? pseudo["pre"]( value ) : { "sn":1, "v":value };
+		var pseudoObj = pseudo["pre"] ? pseudo["pre"]( value, part ) : value;
+		if (pseudoObj["sn"] == null) pseudoObj["sn"] = 1;
 		
 		// if pseudo used the first time create an array for values
 		if (!part.pseudo[name]) part.pseudo[name] = [];
 		
 		// if the native selector could do this selection
-		if (pseudo.support >= (pseudoObj["sn"] || 1)) {
+		if (pseudo.support >= pseudoObj["sn"]) {
 			// create a selector string and add it
 			selector.string += ":" + pseudo.supportedName + (value ? "("+value+")" : "");
 			part.prefereNativeSelector = true;
@@ -763,7 +798,7 @@ var parseFuncs = {
 			// if there is a getter in the pseudo
 			if (pseudo["get"]) {
 				selector.getter = pseudo["get"];
-				selector.getterValue = pseudoObj["v"];
+				selector.getterValue = pseudoObj;
 			}
 		}
 		
@@ -907,10 +942,9 @@ function selectorParse (selectString) {
  * Selects elements in the document, on an element or a list of elements
  * @param {selector.Collection} selectors				The parsed selector to use.
  * @param {Array.<Node>|Node|NodeList} searchOn			The element(s) to search on.
- * @param {string=} token								This string will be passed rekulsive.
  * @return {Array.<Node>} A list of matching elements
  */
-function doSelect (selectors, searchOn, token) {
+function doSelect (selectors, searchOn) {
 	
 	/**
 	 * this is an array of array results
@@ -1020,7 +1054,7 @@ function doSelect (selectors, searchOn, token) {
 		 && (origins.length > 1 || !selector.fullsupport // ... more than one origin was used, lack of support, ...
 		 || (!nativeSelector && selector.useNative) || selector.nativeFailed // ... native selector wasn't used but should have been ...
 		)) {
-			tmpResult = filterSelector( [selector], tmpResult, origins, useNative, token );
+			tmpResult = filterSelector( [selector], tmpResult, origins, useNative );
 		}
 		
 		// if there are still elements in the array add them
@@ -1035,10 +1069,9 @@ function doSelect (selectors, searchOn, token) {
  * @param {Node} element		The element to test on.
  * @param {selector.Part} part	The selector part for the compareson.
  * @param {boolean=} queried	If true basics like tag-name etc. won't be checked.
- * @param {string=} token		This string will be passed to all pseudo funcs.
  * @return {boolean} True if matches.
  */
-function selectorTest (element, part, queried, token) {
+function selectorTest (element, part, queried) {
 	if (!queried) {
 		if (part.id != null && element.id !== part.id) return false; // check id
 		if (part.tagName != null && part.tagName !== "*" && element.nodeName.toUpperCase() !== part.tagName) return false; // check tag name
@@ -1047,7 +1080,7 @@ function selectorTest (element, part, queried, token) {
 		var elementClasses = " " + element.className + " ";
 		var searchClasses  = part.cls;
 		for (var i = 0; i < searchClasses.length; ++i) {
-			if (elementClasses.indexOf( " " + searchClasses[i] + " " ) >= 0) {
+			if (elementClasses.indexOf( " " + searchClasses[i] + " " ) < 0) {
 				return false;
 			}
 		}
@@ -1078,7 +1111,7 @@ function selectorTest (element, part, queried, token) {
 		for (var i = 0; i < values.length; ++i) {
 			var value = values[i];
 			if (queried && browserSupport >= value["sn"]) continue; // skip if the browser is able and has already done it
-			if (!pseudoFunc( element, value["v"], token||"", part )) return false; // check if pseudo matches
+			if (!pseudoFunc( element, value )) return false; // check if pseudo matches
 		}
 	}
 	if (part.hasToContain && !doSelect( [part.hasToContain], element ).length) return false; // if some elements have to be in the element
@@ -1091,10 +1124,9 @@ function selectorTest (element, part, queried, token) {
  * @param {Node|null} sourceElement			the element to match
  * @param {Array|Node|NodeList=} origins	the element that is before the selector (optional)
  * @param {boolean=} queried				if query selector was used some checks can be skipped (optional)
- * @param {string=} token					This string will be passed to all pseudo funcs.
  * @return {boolean} True if selector matches.
  */
-function selectorMatch (selectors, sourceElement, origins, queried, token) {
+function selectorMatch (selectors, sourceElement, origins, queried) {
 	for (var i = 0; i < selectors.length; ++i) {
 		var selector = selectors[i];
 		var s = selector.length;
@@ -1119,7 +1151,7 @@ function selectorMatch (selectors, sourceElement, origins, queried, token) {
 					}
 				// else just test if the selectorPart matches the current element
 				} else if (element.nodeType === 1) {
-					matches = selectorTest( element, part, queried, token );
+					matches = selectorTest( element, part, queried );
 				}
 				return matches;
 			}
@@ -1155,13 +1187,12 @@ function selectorMatch (selectors, sourceElement, origins, queried, token) {
  * @param {Array.<Node>} elementList		the array that has to be reduced
  * @param {Array|Node=} origins				the element that is before the selector (optional)
  * @param {boolean=} queried				if query selector was used some checks can be skipped (optional)
- * @param {string=} token					This string will be passed to all pseudo funcs.
  * @return {Array.<Node>} The list of matching elements.
  */
-function filterSelector (selectors, elementList, origins, queried, token) {
+function filterSelector (selectors, elementList, origins, queried) {
 	var newList = [];
 	for (var i = 0; i < elementList.length; ++i) {
-		if (selectorMatch( selectors, elementList[i], origins, queried, token )) newList.push( elementList[i] );
+		if (selectorMatch( selectors, elementList[i], origins, queried )) newList.push( elementList[i] );
 	}
 	return newList;
 }
