@@ -13,14 +13,14 @@ This here is a JavaScript CSS selector engine that was build with the querySelec
 The best way is to run `compile.bat` on windows or `compile.sh` everywhere else. This will create a ~10 KB JavaScript file (4 KB later with GZip) named *Sen.min.js* . Just include it into the head of your document and you can start.
 
 ## basic selection
-Just use `selector( "div#withId" )`. This will return an Array (not a NodeList) with all elements that match the selector.
+Just use `select( "div#withId" )`. This will return an Array (not a NodeList) with all elements that match the selector.
 
-If you want to select all elements within an element use `selector( "div.with.classes", DOMElement )`. Note that if the given element isn't document or a DOMElement it will cause Errors.
+If you want to select all elements within an element use `select( "div.with.classes", DOMElement )`. Note that if the given element isn't document or a DOMElement it will cause Errors.
 
 ## matching and filtering
-If you already have a collection of elements (any enumerable object will do like NodeList etc.) and just want to reduce them with a selector use `selector.filter( "a:any-link", [ DOMElement, ... ] )`. This will return all link elements that are actual links as Array.
+If you already have a collection of elements (any enumerable object will do like NodeList etc.) and just want to reduce them with a selector use `select.filter( "a:any-link", [ DOMElement, ... ] )`. This will return all link elements that are actual links as Array.
 
-If you just want to test if an element matches an selector use `selector.test( "ul > li", DOMElement )`. This will return true if the element is an *li* that is a child of an *ul* or false if not.
+If you just want to test if an element matches an selector use `select.test( "ul > li", DOMElement )`. This will return true if the element is an *li* that is a child of an *ul* or false if not.
 
 # Supported Selectors
 ## basic selectors

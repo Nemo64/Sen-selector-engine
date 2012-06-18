@@ -12,7 +12,7 @@
  * @param {Node|Array.<Node>|NodeList=} searchIn  The element(s) to search in. (optional)
  * @return {Array.<Node>} The found Elements.
  */
-function selector(selectorString, searchIn) {
+function select(selectorString, searchIn) {
 	return doSelect( selectorParse(selectorString), searchIn || document );
 };
 /**
@@ -23,7 +23,7 @@ function selector(selectorString, searchIn) {
  * @param {Node|Array.<Node>|NodeList} origin
  * @return {boolean} True if the element matches
  */
-selector["test"] = function (selectorString, toTest, origin) {
+select["test"] = function (selectorString, toTest, origin) {
 	if (toTest == null) throw TypeError();
 	return toTest.nodeType === 1
 		? selectorMatch(
@@ -40,7 +40,7 @@ selector["test"] = function (selectorString, toTest, origin) {
  * @param {Array.<Node>|NodeList} elementList  The element(s) to filter.
  * @return {Array.<Node>} The matching Elements.
  */
-selector["filter"] = function (selectorString, elementList) {
+select["filter"] = function (selectorString, elementList) {
 	if (elementList == null) throw TypeError();
 	return filterSelector( selectorParse(selectorString), filterElements(elementList) );
 };
@@ -51,7 +51,7 @@ selector["filter"] = function (selectorString, elementList) {
  * @param {Array.<*>|NodeList} elements  The list of Nodes to filter
  * @return {Array.<Node>} The filtered result
  */
-selector["filterElements"] = function (elements) {
+select["filterElements"] = function (elements) {
 	if (elements == null) throw TypeError();
 	return filterElements( elements );
 };
@@ -64,17 +64,17 @@ selector["filterElements"] = function (elements) {
 // First define some Selector types
 // This won't be in the min version and is just for the compiler
 /** @typedef {Object.<string, Array.<RegExp>>} */
-selector.Attr;
-/** @typedef {{ each: function( Node, *, string ):boolean, get: selector.Getter, pre: function( string, selector.Part ), vendorNames: Array.<string>, testValues: Array.<string>, testHTML: string, testResult: string, support: number, supportedName: string }} */
-selector.Pseudo;
+select.Attr;
+/** @typedef {{ each: function( Node, *, string ):boolean, get: select.Getter, pre: function( string, select.Part ), vendorNames: Array.<string>, testValues: Array.<string>, testHTML: string, testResult: string, support: number, supportedName: string }} */
+select.Pseudo;
 /** @typedef {function(*, Node, Node):(Array.<Node>|NodeList)} */
-selector.Getter;
-/** @typedef {{ relation: string, tagName: string, id: (string|null), cls: Array.<string>, attr: selector.Attr, searchName: (string|null), pseudo: Object.<string, Array.<*>>, hasToContain: (selector.Selector|null), getElementMethodCount: number, prefereNativeSelector: boolean, nativeFailed: boolean }} */
-selector.Part;
-/** @typedef {Array.<selector.Part>|{ string: string, fullsupport: boolean, useNative: boolean, getter: selector.Getter, getterValue: * }} */
-selector.Selector;
-/** @typedef {Array.<selector.Selector>} */
-selector.Collection;
+select.Getter;
+/** @typedef {{ relation: string, tagName: string, id: (string|null), cls: Array.<string>, attr: select.Attr, searchName: (string|null), pseudo: Object.<string, Array.<*>>, hasToContain: (select.Selector|null), getElementMethodCount: number, prefereNativeSelector: boolean, nativeFailed: boolean }} */
+select.Part;
+/** @typedef {Array.<select.Part>|{ string: string, fullsupport: boolean, useNative: boolean, getter: select.Getter, getterValue: * }} */
+select.Selector;
+/** @typedef {Array.<select.Selector>} */
+select.Collection;
 
 /**
  * Checks if an element is in it's document.
@@ -235,7 +235,7 @@ function nthCheck (element, value, forward, matches) {
 /**
  * preParser for selector based pseudos
  * @param {string} value
- * @return {{ sn: number, selectors: selector.Collection }}
+ * @return {{ sn: number, selectors: select.Collection }}
  */
 function psParse (value) {
 	var selectors = selectorParse( value );
@@ -261,9 +261,9 @@ function psParse (value) {
 };
 /**
  * clones a selector part for the match pseudos
- * @param {string} value        just because we need the secound param
- * @param {selector.Part} part  the selector part
- * @return {selector.Part}
+ * @param {string} value      just because we need the secound param
+ * @param {select.Part} part  the selector part
+ * @return {select.Part}
  */
 function clonePart (value, part) {
 	var newPart = {};
@@ -281,18 +281,18 @@ function clonePart (value, part) {
 	for (var name in part.pseudo) {
 		newPart.pseudo[name] = part.pseudo[name].slice();
 	}
-	return /** @type {selector.Part} */ newPart;
+	return /** @type {select.Part} */ newPart;
 }
 /**
  * same as the function above except + the nthParse function.
- * @param {string} value        the value for the nthParse
- * @param {selector.Part} part  the selector part
- * @return {{ nt: number, begin: number, part: selector.Part }}
+ * @param {string} value      the value for the nthParse
+ * @param {select.Part} part  the selector part
+ * @return {{ nt: number, begin: number, part: select.Part }}
  */
 function nthWithPart (value, part) {
 	var result = nthParse( value );
 	result.part = clonePart( value, part );
-	return /** @type {{ nt: number, begin: number, part: selector.Part }} */ result;
+	return /** @type {{ nt: number, begin: number, part: select.Part }} */ result;
 }
 /**
  * Pseudo selector objects with all informations needed for the pseudo.
@@ -304,9 +304,9 @@ function nthWithPart (value, part) {
  * The testHTML variable contains html that will be used for the test
  * The testResult variable has to contain a selector string that works directly with the querySelector. Note that the result can only be one element.
  *     If no result is expected pass null
- * @type Object.<string, selector.Pseudo>
+ * @type Object.<string, select.Pseudo>
  */
-var pseudos = selector["pseudo"] = {
+var pseudos = select["pseudo"] = {
 	"any-link": {
 		"each": function (element) {
 			return element.href;
@@ -575,7 +575,7 @@ function testSelect (selector, localTestDiv) {
  * gets the pseudo object so it is an equivalent to pseudos[pseudoname] except it checks the support first.
  * Also it throws a string error so it is for made for the parsing function.
  * @param {string} pname  the name of the pseudo to search
- * @return {selector.Pseudo}
+ * @return {select.Pseudo}
  */
 function getPseudo (pname) {
 	// if the pseudo isn't known
@@ -675,21 +675,21 @@ var RxSkipOne  = /^\s*((\((([^()]*|\(([^()]*|\([^()]*\))*\))*)\)|['"]([^\\'"]|\\
 var RxATList   = { '':["^","$"], '*':["",""], '^':["^",""], '$':["","$"], '~':["(^| )","( |$)"], '|':["^","(-|$)"] };
 /**
  * Cached selectors
- * @type {Object.<string, selector.Collection>}
+ * @type {Object.<string, select.Collection>}
  */
 var selectorCache = {};
 
 /**
  * A bunch of function that get called to parse the selector.
  * The key has to identify when they are called. The key won't be removed from the string
- * @type Object.<string, function(selector.Part, Function, selector.Selector)>
+ * @type Object.<string, function(select.Part, Function, select.Selector)>
  */
 var parseFuncs = {
 	/**
 	 * This is the parser function for id's
-	 * @param {selector.Part} part
+	 * @param {select.Part} part
 	 * @param {Function} getSegment
-	 * @param {selector.Selector} selector
+	 * @param {select.Selector} selector
 	 */
 	"#": function (part, getSegment, selector) {
 		// multible id's result into an impossible selector
@@ -705,9 +705,9 @@ var parseFuncs = {
 	},
 	/**
 	 * This is the parser function for classes
-	 * @param {selector.Part} part
+	 * @param {select.Part} part
 	 * @param {Function} getSegment
-	 * @param {selector.Selector} selector
+	 * @param {select.Selector} selector
 	 */
 	".": function (part, getSegment, selector) {
 		// get the class out of the selector
@@ -720,9 +720,9 @@ var parseFuncs = {
 	},
 	/**
 	 * This is the parser function for attributes
-	 * @param {selector.Part} part
+	 * @param {select.Part} part
 	 * @param {Function} getSegment
-	 * @param {selector.Selector} selector
+	 * @param {select.Selector} selector
 	 */
 	"[": function (part, getSegment, selector) {
 		var segment = getSegment( RxAttr );
@@ -769,9 +769,9 @@ var parseFuncs = {
 	},
 	/**
 	 * This is the parser function for pseudo selectors
-	 * @param {selector.Part} part
+	 * @param {select.Part} part
 	 * @param {Function} getSegment
-	 * @param {selector.Selector} selector
+	 * @param {select.Selector} selector
 	 */
 	":": function (part, getSegment, selector) {
 		// get the pseudo
@@ -813,11 +813,11 @@ var parseFuncs = {
 /**
  * Parses a selector to an abstract object.
  * @param {string} selectString  The selector-string
- * @return {selector.Collection} A selector
+ * @return {select.Collection} A selector
  */
 function selectorParse (selectString) {
 	var string = selectString;
-	/** @type {selector.Collection} */
+	/** @type {select.Collection} */
 	var selectors = [];
 	if (typeof selectString !== "string") return selectors; // if no string given return empty selector collection
 	if (selectorCache[selectString]) return selectorCache[selectString]; // if already parsed just return
@@ -826,7 +826,7 @@ function selectorParse (selectString) {
 	while (string) {
 		/**
 		 * create the selector
-		 * @type {selector.Selector}
+		 * @type {select.Selector}
 		 */
 		var selector = [];
 
@@ -841,7 +841,7 @@ function selectorParse (selectString) {
 				var somethingAdded = false;
 				/**
 				 * The selector part
-				 * @type {selector.Part}
+				 * @type {select.Part}
 				 */
 				var part = {
 					relation: "", tagName: "*", id: null, cls: [], attr: {}, searchName: null, pseudo: {}, hasToContain: null,
@@ -943,7 +943,7 @@ function selectorParse (selectString) {
 
 /**
  * Selects elements in the document, on an element or a list of elements
- * @param {selector.Collection} selectors        The parsed selector to use.
+ * @param {select.Collection} selectors          The parsed selector to use.
  * @param {Array.<Node>|Node|NodeList} searchOn  The element(s) to search on.
  * @return {Array.<Node>} A list of matching elements
  */
@@ -1018,7 +1018,7 @@ function doSelect (selectors, searchOn) {
 			// the id selector should always be used if searched for an id
 			// if in our selector is a id and our searchOn is in the document
 			if (selector.idPart != null && inDocument( /** @type {Node} */ (searchOn) )) {
-				/** @type {selector.Part} */
+				/** @type {select.Part} */
 				var idPart = selector[selector.idPart];
 				/** @type {Node} */
 				var ele = ownerDocument.getElementById( idPart.id );
@@ -1063,7 +1063,7 @@ function doSelect (selectors, searchOn) {
 		 && (origins.length > 1 || !selector.fullsupport // ... more than one origin was used, lack of support, ...
 		 || (!nativeSelector && selector.useNative) || selector.nativeFailed // ... native selector wasn't used but should have been ...
 		)) {
-			tmpResult = filterSelector( [selector], tmpResult, origins, useNative );
+			tmpResult = filterSelector( [selector], tmpResult, origins );
 		}
 
 		// if there are still elements in the array add them
@@ -1075,23 +1075,21 @@ function doSelect (selectors, searchOn) {
 
 /**
  * Tests if an element matches an selector part.
- * @param {Node} element        The element to test on.
- * @param {selector.Part} part  The selector part for the compareson.
- * @param {boolean=} queried    If true basics like tag-name etc. won't be checked.
+ * @param {Node} element      The element to test on.
+ * @param {select.Part} part  The selector part for the compareson.
+ * @param {boolean=} queried  If true basics like tag-name etc. won't be checked.
  * @return {boolean} True if matches.
  */
 function selectorTest (element, part, queried) {
-	if (!queried) {
-		if (part.id != null && element.id !== part.id) return false; // check id
-		if (part.tagName != null && part.tagName !== "*" && element.nodeName.toUpperCase() !== part.tagName) return false; // check tag name
+	if (part.id != null && element.id !== part.id) return false; // check id
+	if (part.tagName != null && part.tagName !== "*" && element.nodeName.toUpperCase() !== part.tagName) return false; // check tag name
 
-		// check the classes
-		var elementClasses = " " + element.className + " ";
-		var searchClasses  = part.cls;
-		for (var i = 0; i < searchClasses.length; ++i) {
-			if (elementClasses.indexOf( " " + searchClasses[i] + " " ) < 0) {
-				return false;
-			}
+	// check the classes
+	var elementClasses = " " + element.className + " ";
+	var searchClasses  = part.cls;
+	for (var i = 0; i < searchClasses.length; ++i) {
+		if (elementClasses.indexOf( " " + searchClasses[i] + " " ) < 0) {
+			return false;
 		}
 	}
 	// check attributes
@@ -1119,7 +1117,6 @@ function selectorTest (element, part, queried) {
 		// loop the values this pseudo was called with
 		for (var i = 0; i < values.length; ++i) {
 			var value = values[i];
-			if (queried && browserSupport >= value["sn"]) continue; // skip if the browser is able and has already done it
 			if (!pseudoFunc( element, value )) return false; // check if pseudo matches
 		}
 	}
@@ -1129,13 +1126,12 @@ function selectorTest (element, part, queried) {
 
 /**
  * Tests if an element matches an selector collection.
- * @param {selector.Collection} selectors  a parsed selector
- * @param {Node|null} sourceElement        the element to match
- * @param {Array|Node|NodeList=} origins   the element that is before the selector (optional)
- * @param {boolean=} queried               if query selector was used some checks can be skipped (optional)
+ * @param {select.Collection} selectors   a parsed selector
+ * @param {Node|null} sourceElement       the element to match
+ * @param {Array|Node|NodeList=} origins  the element that is before the selector (optional)
  * @return {boolean} True if selector matches.
  */
-function selectorMatch (selectors, sourceElement, origins, queried) {
+function selectorMatch (selectors, sourceElement, origins) {
 	for (var i = 0; i < selectors.length; ++i) {
 		var selector = selectors[i];
 		var s = selector.length;
@@ -1160,7 +1156,7 @@ function selectorMatch (selectors, sourceElement, origins, queried) {
 					}
 				// else just test if the selectorPart matches the current element
 				} else if (element.nodeType === 1) {
-					matches = selectorTest( element, part, queried );
+					matches = selectorTest( element, part );
 				}
 				return matches;
 			}
@@ -1192,21 +1188,20 @@ function selectorMatch (selectors, sourceElement, origins, queried) {
 }
 /**
  * Reduces an array by a selector collection.
- * @param {selector.Collection} selectors  a parsed selector
- * @param {Array.<Node>} elementList       the array that has to be reduced
- * @param {Array|Node=} origins            the element that is before the selector (optional)
- * @param {boolean=} queried               if query selector was used some checks can be skipped (optional)
+ * @param {select.Collection} selectors  a parsed selector
+ * @param {Array.<Node>} elementList     the array that has to be reduced
+ * @param {Array|Node=} origins          the element that is before the selector (optional)
  * @return {Array.<Node>} The list of matching elements.
  */
-function filterSelector (selectors, elementList, origins, queried) {
+function filterSelector (selectors, elementList, origins) {
 	var newList = [];
 	for (var i = 0; i < elementList.length; ++i) {
 		var element = elementList[i];
-		if (selectorMatch( selectors, element, origins, queried )) newList.push( element );
+		if (selectorMatch( selectors, element, origins )) newList.push( element );
 	}
 	return newList;
 }
 
 
 // expose to window
-window["selector"] = selector;
+window["select"] = select;

@@ -53,205 +53,205 @@
 			// the tests
 			t1.addTest(
 				"`ul`",
-				function () { return selector("ul", this)[0]; },
+				function () { return select("ul", this)[0]; },
 				ul
 			);
 			t1.addTest(
 				"`li`",
-				function () { return selector("li", this).length; },
+				function () { return select("li", this).length; },
 				li.length
 			);
 			t1.addTest(
 				"`#foo`",
-				function () { return selector("#foo", this)[0]; },
+				function () { return select("#foo", this)[0]; },
 				li[0]
 			);
 			t1.addTest(
 				"`.foo`",
-				function () { return selector(".foo", this)[0]; },
+				function () { return select(".foo", this)[0]; },
 				li[4]
 			);
 			t1.addTest(
 				"`li.bar.foo`",
-				function () { return selector("li.bar.foo", this)[0]; },
+				function () { return select("li.bar.foo", this)[0]; },
 				li[4]
 			);
 			t1.addTest(
 				"`.bar`",
-				function () { return selector(".bar", this).length; },
+				function () { return select(".bar", this).length; },
 				2
 			);
 			t1.addTest(
 				"`li#foo`",
-				function () { return selector("li#foo", this)[0]; },
+				function () { return select("li#foo", this)[0]; },
 				li[0]
 			);
 			t1.addTest(
 				"`li#foo.bar`",
-				function () { return selector("li#foo.bar", this)[0]; },
+				function () { return select("li#foo.bar", this)[0]; },
 				li[0]
 			);
 			
 			
 			t1.addTest(
 				"`ul > li`",
-				function () { return selector("ul > li", this).length; },
+				function () { return select("ul > li", this).length; },
 				li.length
 			);
 			t1.addTest(
 				"`li:first-child + li span`",
-				function () { return selector("li:first-child + li span", this)[0]; },
+				function () { return select("li:first-child + li span", this)[0]; },
 				span
 			);
 			t1.addTest(
 				"`li:first-child ~ li`",
-				function () { return selector("li:first-child ~ li", this).length; },
+				function () { return select("li:first-child ~ li", this).length; },
 				li.length - 1
 			);
 			
 			
 			t1.addTest(
 				"`[data-attr=\"test\"]`",
-				function () { return selector("[data-attr=\"test\"]", this)[0]; },
+				function () { return select("[data-attr=\"test\"]", this)[0]; },
 				li[3]
 			);
 			t1.addTest(
 				"`$li > span`",
-				function () { return selector("$li > span", this)[0]; },
+				function () { return select("$li > span", this)[0]; },
 				li[1]
 			);
 			
 			
 			t1.addTest(
 				"`a:any-link`",
-				function () { return selector("a:any-link", this).length; },
+				function () { return select("a:any-link", this).length; },
 				2
 			);
 			t1.addTest(
 				"`a:local-link`",
-				function () { return selector("a:local-link", this)[0]; },
+				function () { return select("a:local-link", this)[0]; },
 				a[0]
 			);
 			t1.addTest(
 				"`a:local-link(0)`",
-				function () { return selector("a:local-link(0)", this)[1]; },
+				function () { return select("a:local-link(0)", this)[1]; },
 				a[1]
 			);
 			
 			t1.addTest(
 				"`li:target` without hash",
-				function () { return selector("li:target", this).length; },
+				function () { return select("li:target", this).length; },
 				0, function () { location.hash = "#"; } // prepare
 			);
 			t1.addTest(
 				"`li:target` with hash",
-				function () { return selector("li:target", this)[0]; },
+				function () { return select("li:target", this)[0]; },
 				li[0], function () { location.hash = "#foo"; } // prepare
 			);
 			
 			t1.addTest(
 				"`input:focus` while focused",
-				function () { return selector("input:focus", this)[0]; },
+				function () { return select("input:focus", this)[0]; },
 				input[1], function () { input[1].focus(); } // prepare
 			);
 			t1.addTest(
 				"`input:focus` while bured",
-				function () { return selector("input:focus", this).length; },
+				function () { return select("input:focus", this).length; },
 				0, function () { input[1].blur(); } // prepare
 			);
 			
 			t1.addTest(
 				"`html:root` is root element",
-				function () { return selector("html:root")[0]; },
+				function () { return select("html:root")[0]; },
 				document.documentElement
 			);
 			t1.addTest(
 				"`ul:root` will never be root",
-				function () { return selector("ul:root").length; },
+				function () { return select("ul:root").length; },
 				0
 			);
 			
 			t1.addTest(
 				"`li:first-child`",
-				function () { return selector("li:first-child", this)[0]; },
+				function () { return select("li:first-child", this)[0]; },
 				li[0]
 			);
 			t1.addTest(
 				"`li:last-child`",
-				function () { return selector("li:last-child", this)[0]; },
+				function () { return select("li:last-child", this)[0]; },
 				li[4]
 			);
 			t1.addTest(
 				"`span:only-child`",
-				function () { return selector("span:only-child", this)[0]; },
+				function () { return select("span:only-child", this)[0]; },
 				span
 			);
 			t1.addTest(
 				"`li:nth-child(3)`",
-				function () { return selector("li:nth-child(3)", this)[0]; },
+				function () { return select("li:nth-child(3)", this)[0]; },
 				li[2]
 			);
 			t1.addTest(
 				"`li:nth-child(2n+1)`",
-				function () { return selector("li:nth-child(2n+1)", this).length; },
+				function () { return select("li:nth-child(2n+1)", this).length; },
 				3
 			);
 			t1.addTest(
 				"`form:nth-of-type(1)`",
-				function () { return selector("form:nth-of-type(1)", this)[0]; },
+				function () { return select("form:nth-of-type(1)", this)[0]; },
 				form
 			);
 			t1.addTest(
 				"`span:empty`",
-				function () { return selector("span:empty", this).length; },
+				function () { return select("span:empty", this).length; },
 				0
 			);
 			
 			t1.addTest(
 				"`input:enabled` there is one hidden input",
-				function () { return selector("input:enabled", this).length; },
+				function () { return select("input:enabled", this).length; },
 				input.length, function () { input[1].disabled = false; }
 			);
 			t1.addTest(
 				"`input:disabled` now the textinput is disabled",
-				function () { return selector("input:disabled", this)[0]; },
+				function () { return select("input:disabled", this)[0]; },
 				input[1], function () { input[1].disabled = true; } // prepare
 			);
 			
 			t1.addTest(
 				"`input:checked` not checked yet",
-				function () { return selector("input:checked", this).length; },
+				function () { return select("input:checked", this).length; },
 				0, function () { input[2].checked = false; }
 			);
 			t1.addTest(
 				"`input:checked` is now checked",
-				function () { return selector("input:checked", this)[0]; },
+				function () { return select("input:checked", this)[0]; },
 				input[2], function () { input[2].checked = true; } // prepare
 			);
 			
 			t1.addTest(
 				"`span:lang(en)`",
-				function () { return selector("span:lang(en)", this)[0]; },
+				function () { return select("span:lang(en)", this)[0]; },
 				span
 			);
 			t1.addTest(
 				"`span:dir(ltr)`",
-				function () { return selector("span:dir(ltr)", this)[0]; },
+				function () { return select("span:dir(ltr)", this)[0]; },
 				span
 			);
 			t1.addTest(
 				"`ul:not(:empty)`",
-				function () { return selector("ul:not(:empty)", this)[0]; },
+				function () { return select("ul:not(:empty)", this)[0]; },
 				ul
 			);
 			t1.addTest(
 				"`li:matches(#foo, .bar)` this should be done with -webkit-any/-moz-any",
-				function () { return selector("li:matches(#foo, .bar)", this).length; },
+				function () { return select("li:matches(#foo, .bar)", this).length; },
 				2
 			);
 			t1.addTest(
 				"`li:matches($ span, [data-attr=test])` this is to complex for normal browsers",
-				function () { return selector("li:matches($ span, [data-attr=test])", this).length; },
+				function () { return select("li:matches($ span, [data-attr=test])", this).length; },
 				2
 			);
 			t1.finish();
