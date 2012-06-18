@@ -44,7 +44,7 @@ The attribute selector follows the specs. This means you can use those attribute
 
 This is still not all. Also the CSS 4 insensitive modifier is supported. `img[alt*="blue" i]` would match any image that has an alternative text that contains *blue*, *Blue* or *bLuE*.
 
-The values can also be wrapped in single quotes and can also be ignored if the value only contains only word-chars (a-z, A-Z, 0-9, underscore and minus). If you need to check for quotes in your attribute value you can escape the value with a backslash: `[attr*="\\"quotes in attributes?\\""]`. The second backslash is because JavaScript strips one away (it also uses backslashes for escaping).
+The values can also be wrapped in single quotes and can also be ignored if the value only contains word-chars (a-z, A-Z, 0-9, underscore and minus). If you need to check for quotes in your attribute value you can escape the value with a backslash: `[attr*="\\"quotes in attributes?\\""]`. The second backslash is because JavaScript strips one away.
 
 ## pseudo selectors
 A huge part of Sen are pseudo selectors. Most of the CSS 3 pseudo selectors and even some CSS 4 pseudos are implemented and work even in IE 6+. Here is a list of all supported pseudo selectors:
@@ -89,5 +89,5 @@ A huge part of Sen are pseudo selectors. Most of the CSS 3 pseudo selectors and 
 - `:dir(ltr)` matches elements that have text that has the direction *ltr* or *rtl*
 
 ### selectors depending on selectors
-- `:not(selector)` matches all elements that don't match the selector inside the brackets.
-- `:matches(selector)` matches all elements that match the selector. You could do this for example: `:enabled:matches(input:matches([type=text], [type=password]), textarea)` to get all textinputs that are enabled
+- `:not(selector)` matches all elements that don't match the selector inside the brackets. This is a powerfull pseudo. You can put anything inside it to negate it. Here an example: `div:not(.notme)` would match any div that hasn't the class *notme*. Multible selectors, seperated by a comma, and even deep selectors are supported. `div:not(div > div, .notme)` would only match div's that aren't a child of a div and don't have the class *notme*. If one of those conditions match a div won't be in the list.
+- `:matches(selector)` matches all elements that match the selector. The selector for matches has the same rules as the selector for not: none. You can make any condition you want. You could do this for example: `:enabled:matches(input:matches([type=text], [type=password]), textarea)` to get all textinputs that are enabled.
