@@ -447,8 +447,7 @@ var pseudos = select["pseudo"] = {
 			return element.disabled;
 		},
 		// FF 3.5 reports that hidden inputs are disabled
-		testHTML: "<input type='hidden'>",
-		testResult: null
+		testHTML: "<input type='hidden'>"
 	},
 	"enabled": {
 		"each": function (element) {
@@ -697,7 +696,7 @@ var parseFuncs = {
 
 		// get the id out of the selector
 		var segment = getSegment( RxId, true );
-		if (!segment[1]) throw "invalid id";
+		if (!segment[1]) throw "invalid id in";
 
 		part.id = unescapeUse( segment[1] ); // unescape the id and return it
 		selector.idPart = selector.length - 1; // tell that this part has the last id in the selector
@@ -712,7 +711,7 @@ var parseFuncs = {
 	".": function (part, getSegment, selector) {
 		// get the class out of the selector
 		var segment = getSegment( RxClass, true);
-		if (!segment[1]) throw "invalid class";
+		if (!segment[1]) throw "invalid class in";
 
 		// add the class to the class list
 		part.cls.push( unescapeUse(segment[1]) );
@@ -734,7 +733,7 @@ var parseFuncs = {
 		var hasValue = typeof value === "string";
 		var isInQuotes = hasValue ? RxIsQuote.test( value ) : false;
 
-		if (!segment[0]) throw "invalid attribute";
+		if (!segment[0]) throw "invalid attribute in";
 
 		// add this attribute the search list if it doesn't exist yet
 		if (!(attrName in part.attr)) part.attr[attrName] = [];
@@ -776,15 +775,16 @@ var parseFuncs = {
 	":": function (part, getSegment, selector) {
 		// get the pseudo
 		var segment = getSegment( RxPseudo );
-		if (!segment[0]) throw "invalid pseudo";
+		if (!segment[0]) throw "invalid pseudo in";
 
 		var name = segment[1];
-		var value = segment[3]||"";
+		var value = segment[3] || "";
 		var pseudo = getPseudo( name );
 
 		// use the pseudo parse function if there is any or just crate a pseudo object with basic infos
 		var pseudoObj = pseudo["pre"] ? pseudo["pre"]( value, part ) : value;
-		if (pseudoObj["sn"] == null) pseudoObj["sn"] = 1;
+		if (pseudoObj == null) throw false; // the value must not be null or undefined 
+		if (pseudoObj["sn"] == null) pseudoObj["sn"] = 1; // there always has to be a support need
 
 		// if pseudo used the first time create an array for values
 		if (!part.pseudo[name]) part.pseudo[name] = [];
@@ -974,9 +974,10 @@ function doSelect (selectors, searchOn) {
 		else if (origins.length === 1) searchOn = origins[0];
 		// else we search from the document so we don't have to selecto multible times
 		else searchOn = origins[0].ownerDocument;
-	// else we search from our... searchOn
+	// if the searchOn is an element or a document search from it
 	} else if (searchOn.nodeType === 1 || searchOn.nodeType === 9) {
 		origins = [searchOn];
+	// else this seems to be no valid input so there will be an empty output
 	} else return [];
 
 	/**
@@ -1077,13 +1078,17 @@ function doSelect (selectors, searchOn) {
  * Tests if an element matches an selector part.
  * @param {Node} element      The element to test on.
  * @param {select.Part} part  The selector part for the compareson.
- * @param {boolean=} queried  If true basics like tag-name etc. won't be checked.
  * @return {boolean} True if matches.
  */
-function selectorTest (element, part, queried) {
-	if (part.id != null && element.id !== part.id) return false; // check id
-	if (part.tagName != null && part.tagName !== "*" && element.nodeName.toUpperCase() !== part.tagName) return false; // check tag name
-
+function selectorTest (element, part) {
+	// check if the id of the element is current
+	if (part.id != null && element.id !== part.id) {
+		return false;
+	}
+	// check if the tag name is currect
+	if (part.tagName != null && part.tagName !== "*" && element.nodeName.toUpperCase() !== part.tagName) {
+		return false;
+	}
 	// check the classes
 	var elementClasses = " " + element.className + " ";
 	var searchClasses  = part.cls;
@@ -1114,14 +1119,18 @@ function selectorTest (element, part, queried) {
 		var values = part.pseudo[pseudoName];
 		var browserSupport = pseudo.support||0;
 
-		// loop the values this pseudo was called with
+		// loop the values this pseudo was requested with
 		for (var i = 0; i < values.length; ++i) {
 			var value = values[i];
-			if (!pseudoFunc( element, value )) return false; // check if pseudo matches
+			// does this element match the pseudo?
+			if (!pseudoFunc( element, value )) {
+				return false;
+			}
 		}
 	}
-	if (part.hasToContain && !doSelect( [part.hasToContain], element ).length) return false; // if some elements have to be in the element
-	return true;
+	
+	// now if the element does contain what it's supposed to containt it's ok
+	return !part.hasToContain || !doSelect( [part.hasToContain], element ).length;
 }
 
 /**
@@ -1163,23 +1172,31 @@ function selectorMatch (selectors, sourceElement, origins) {
 
 			// normal selector, loops the dom up until match
 			if (lastRel === "") {
-				while (element = element.parentNode) if (test()) break;
+				while (element = element.parentNode) {
+					if (test()) break;
+				}
 			// basic children selector, goes one up
 			} else if (lastRel === ">") {
 				element = element.parentNode;
 				test();
 			// sibling selectors (will never select document so just nodeType === 1)
 			} else if (lastRel === "+") {
-				while (element = element[prevSibling]) if (element.nodeType === 1) {
-					test();
-					break;
+				while (element = element[prevSibling]) {
+					if (element.nodeType === 1) {
+						test();
+						break;
+					}
 				}
 			} else if (lastRel === "~") {
-				while (element = element[prevSibling]) if (element.nodeType === 1 && test()) {
-					break;
+				while (element = element[prevSibling]) {
+					if (element.nodeType === 1 && test()) {
+						break;
+					}
 				}
 			// fake selector relation for the first part to check if the given element matches the given element
-			} else if (!lastRel) test();
+			} else test();
+			
+			// remember the last relation
 			if (part) lastRel = part.relation;
 		}
 		if (matches) return matches;
