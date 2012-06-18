@@ -13,7 +13,7 @@
  * @return {Array.<Node>} The found Elements.
  */
 function select(selectorString, searchIn) {
-	return doSelect( selectorParse(selectorString), searchIn || document );
+	return doSelect( selectorParse(selectorString), searchIn == null ? document : searchIn );
 };
 /**
  * Tests if an element matches the selector.
@@ -24,8 +24,7 @@ function select(selectorString, searchIn) {
  * @return {boolean} True if the element matches
  */
 select["test"] = function (selectorString, toTest, origin) {
-	if (toTest == null) throw TypeError();
-	return toTest.nodeType === 1
+	return toTest != null && toTest.nodeType === 1
 		? selectorMatch(
 				selectorParse(selectorString),
 				toTest,
@@ -41,8 +40,8 @@ select["test"] = function (selectorString, toTest, origin) {
  * @return {Array.<Node>} The matching Elements.
  */
 select["filter"] = function (selectorString, elementList) {
-	if (elementList == null) throw TypeError();
-	return filterSelector( selectorParse(selectorString), filterElements(elementList) );
+	return elementList == null ? []
+		: filterSelector( selectorParse(selectorString), filterElements(elementList) );
 };
 /**
  * returns an array! which contains all elemnets from the given one. (nodeType === 1)
@@ -52,8 +51,8 @@ select["filter"] = function (selectorString, elementList) {
  * @return {Array.<Node>} The filtered result
  */
 select["filterElements"] = function (elements) {
-	if (elements == null) throw TypeError();
-	return filterElements( elements );
+	return elements == null ? []
+		: filterElements( elements );
 };
 
 
