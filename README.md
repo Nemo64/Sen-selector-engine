@@ -13,18 +13,18 @@ This here is a JavaScript CSS selector engine that was build with the querySelec
 The best way is to run `compile.bat` on windows or `compile.sh` everywhere else. This will create a ~10 KB JavaScript file (4 KB later with GZip) named *Sen.min.js* . Just include it into the head of your document and you can start.
 
 ## basic selection
-Just use `select( "div#withId" )`. This will return an Array (not a NodeList) with all elements that match the selector.
+Just use `select( "div#withId" )`. This will return an Array (not a NodeList) with all elements that match the selector. Sen will normaly search in the document in which it was included. This can be changed with the second optional parameter.
 
-If you want to select all elements within an element use `select( "div.with.classes", DOMElement )`. Note that if the given element isn't document or a DOMElement it will cause Errors.
+If you want to select all elements within an element, an array of elements or another document use `select( "div.with.classes", DOMElement )`. Note that if the second parameter isn't a document or a DOMElement the result will always be empty except if the parameter is null or undefined which will result into the same behavior as if the parameter weren't set at all.
 
 ## matching and filtering
-If you already have a collection of elements (any enumerable object will do like NodeList etc.) and just want to reduce them with a selector use `select.filter( "a:any-link", [ DOMElement, ... ] )`. This will return all link elements that are actual links as Array.
+If you already have a collection of elements (any enumerable object will do like NodeList etc.) and just want to reduce them with a selector use `select.filter( "a:any-link", [ DOMElement, ... ] )`. This will return all link elements that are actual links as Array. If the second parameter is not an array of DOMElements the result will always be empty.
 
-If you just want to test if an element matches an selector use `select.test( "ul > li", DOMElement )`. This will return true if the element is an *li* that is a child of an *ul* or false if not.
+If you just want to test if an element matches an selector use `select.test( "ul > li", DOMElement )`. This will return true if the element is an *li* that is a child of an *ul* or false if not. It will also return false if the second parameter is not a DOMElement.
 
 # Supported Selectors
 ## basic selectors
-Of course it supports tag-name, id and class selection. Look in the specs for detailed informations. This is how a full basic selector would look like: `div#main.bordered.green` and `div.bordered.green#main` which are basically the same just written in  a different order but the tag-name has to be at the beginning or else you get a parsing error.
+Of course it supports tag-name, id and class selection. Look in the specs for detailed informations. This is how a full basic selector would look like: `div#main.bordered.green` and `div.bordered.green#main` which are basically the same just written in a different order but the tag-name has to be at the beginning or else you get a parsing error.
 
 If you need to select an item that has an invalid id or class you can escape those chars like `div#my\\ id`. (the second backslash is for JavaScript)
 
@@ -36,7 +36,7 @@ Sometimes you want to select elements after an attribute for example if you look
 
 The attribute selector follows the specs. This means you can use those attribute selectors:
 
-- `[attr?"foobar"]` matches **foobar** and only *foobar*
+- `[attr="foobar"]` matches **foobar** and only *foobar*
 - `[attr*="oba"]` would match fo**oba**r because it contains *oba*
 - `[attr^="foo"]` would also match **foo**bar because it begins with *foo*
 - `[attr$="bar"]` would also match foo**bar** because it ends with *bar*
