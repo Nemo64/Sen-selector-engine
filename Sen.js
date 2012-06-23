@@ -162,7 +162,7 @@ var lastChild      = checkElementVersion("lastChild");
 // check for some more rare selectors
 var classSelector  = !!testDiv.getElementsByClassName; // if the browser supports selecting by class
 var nativeSelector = !!testDiv.querySelector; // if the browser supports a native selector
-var hasFocus       = !!document.hasFocus; // if we can figure out if the document is focused
+var focusCheckable = !!document.hasFocus; // if we can figure out if the document is focused
 
 
 //////////////////////
@@ -175,6 +175,9 @@ var RxRxEscape        = /[.*+?|\\()\[\]{}]/g;
 var RxNthV            = /^(\d+n)?([+-]?\d+)?$/m;
 var RxMainUrl         = /:\/{2,3}([^?#]*)([?#]|$)/m;
 var RxDangerousPseudo = /^(matches|not)$/m;
+// some vals for tests
+var nthTestValues = ["2n+1"];
+var selectorTestValues = ["a","a,a","a a",":not(a)"];
 /**
  * Removes escaped chars and the quotes from a string.
  * @param {string} string  The string to unescape
@@ -294,14 +297,25 @@ function nthWithPart (value, part) {
 	return /** @type {{ nt: number, begin: number, part: select.Part }} */ result;
 }
 /**
+ * check if the element is focused.
+ * @param {Node} node  the node to check
+ * @return {boolean}
+ */
+function hasFocus (node) {
+	var ownerDocument = node.ownerDocument;
+	return ownerDocument.activeElement === node
+		&& (!focusCheckable || ownerDocument.hasFocus())
+		&& (node.type || node.href);
+}
+/**
  * Pseudo selector objects with all informations needed for the pseudo.
  * The each method gets called on every element that has to be checked with the pseudo.
  * The get method only gets called if the pseudo is in the last part of a selector and not supported by the browser. (optional)
  * The pre method gets called while a selector gets parsed. (NOTE: the parsed selectors will be cached) (optional)
  * The vendorNames variable contains an array of alternative names for the pseudo that the browser might support (optional)
  * The testValues variable contains an array of test Values (big shock) that the pseudo will be called with on support test. (optional)
- * The testHTML variable contains html that will be used for the test
- * The testResult variable has to contain a selector string that works directly with the querySelector. Note that the result can only be one element.
+ * The testHTML variable contains html that will be used for the test (optional)
+ * The testResult variable has to contain a selector string that works directly with the querySelector. Note that the result can only be one element. (optional)
  *     If no result is expected pass null
  * @type Object.<string, select.Pseudo>
  */
@@ -348,14 +362,14 @@ var pseudos = select["pseudo"] = {
 			return nthCheck( element, value, true );
 		},
 		"pre": nthParse,
-		testValues: ["2n+1"]
+		testValues: nthTestValues
 	},
 	"nth-last-child": {
 		"each": function (element, value) {
 			return nthCheck( element, value, false );
 		},
 		"pre": nthParse,
-		testValues: ["2n+1"]
+		testValues: nthTestValues
 	},
 
 
@@ -391,7 +405,7 @@ var pseudos = select["pseudo"] = {
 			return nthCheck( element, value, true, function (child) { return child.nodeName === name } );
 		},
 		"pre": nthParse,
-		testValues: ["2n+1"]
+		testValues: nthTestValues
 	},
 	"nth-last-of-type": {
 		"each": function (element, value) {
@@ -399,7 +413,7 @@ var pseudos = select["pseudo"] = {
 			return nthCheck( element, value, false, function (child) { return child.nodeName === name } );
 		},
 		"pre": nthParse,
-		testValues: ["2n+1"]
+		testValues: nthTestValues
 	},
 
 
@@ -429,14 +443,14 @@ var pseudos = select["pseudo"] = {
 			return nthCheck( element, value, true, function (child) { return selectorTest( child, value.part ) } );
 		},
 		"pre": nthWithPart,
-		testValues: ["2n+1"]
+		testValues: nthTestValues
 	},
 	"nth-last-match": {
 		"each": function (element, value) {
 			return nthCheck( element, value, false, function (child) { return selectorTest( child, value.part ) } );
 		},
 		"pre": nthWithPart,
-		testValues: ["2n+1"]
+		testValues: nthTestValues
 	},
 
 
@@ -471,11 +485,11 @@ var pseudos = select["pseudo"] = {
 	},
 	"focus": {
 		"each": function (element) {
-			return element === element.ownerDocument.activeElement && (!hasFocus || element.ownerDocument.hasFocus()) && (element.type || element.href);
+			return hasFocus( element );
 		},
 		"get": function (value, ownerDocument) {
-			var node = ownerDocument.activeElement;
-			return (node && (!hasFocus || ownerDocument.hasFocus()) && (node.type || node.href)) ? [node] : [];
+			var element = ownerDocument.activeElement;
+			return hasFocus( element ) ? [element] : [];
 		}
 	},
 
@@ -497,7 +511,7 @@ var pseudos = select["pseudo"] = {
 			return !selectorMatch( value.selectors, element );
 		},
 		"pre": psParse,
-		testValues: ["a","a,a","a a",":not(a)"]
+		testValues: selectorTestValues
 	},
 	"matches": {
 		"each": function (element, value) {
@@ -507,7 +521,7 @@ var pseudos = select["pseudo"] = {
 			return doSelect( value.selectors, searchOn );
 		},
 		"pre": psParse,
-		testValues: ["a","a,a","a a",":not(a)"],
+		testValues: selectorTestValues,
 		vendorNames: ["-webkit-any", "-moz-any"]
 	},
 
@@ -576,11 +590,10 @@ function testSelect (selector, localTestDiv) {
  * @return {select.Pseudo}
  */
 function getPseudo (pname) {
-	// if the pseudo isn't known
-	if (!(pname in pseudos)) throw "unknown pseudo '" + pname + "'";
-
 	// get the pseudo
 	var pseudo = pseudos[pname];
+	// throw error if the pseudo doesn't exist
+	if (!pseudo) throw "unknown pseudo '" + pname + "'";
 	// if this pseudo was already checked or the native selector is unavailable just return
 	if (pseudo.support != null || !nativeSelector) return pseudo;
 	// else we have to check the pseudo for support first
@@ -662,7 +675,7 @@ var RxRelate   = /^\s*([>+~]?)\s*/m;
 var RxName     = /^\*|^([\w-]|\\.)*/m;
 var RxId       = /^#(([\w-]|\\.)*)/m;
 var RxClass    = /^\.(([\w-]|\\.)*)/m;
-var RxPseudo   = /^:([\w-]*)\s*(\((([^()]*|\(([^()]*|\([^()]*\))*\))*)\))*/m;
+var RxPseudo   = /^:([\w-]*)(\s*\((([^()]*|\(([^()]*|\([^()]*\))*\))*)\))*/m;
 var RxAttr     = /^\[(([\w-]|\\.)*)(([\^*$|]?)=(['"]([^\\'"]|\\.)*['"]|[\w-]*)(\s*i)?)?\]/m;
 var RxPreMod   = /^\$/m;
 var RxNextOne  = /^\s*,\s*/m;
@@ -783,13 +796,12 @@ var parseFuncs = {
 		// use the pseudo parse function if there is any or just crate a pseudo object with basic infos
 		var pseudoObj = pseudo["pre"] ? pseudo["pre"]( value, part ) : value;
 		if (pseudoObj == null) throw false; // the value must not be null or undefined 
-		if (pseudoObj["sn"] == null) pseudoObj["sn"] = 1; // there always has to be a support need
 
 		// if pseudo used the first time create an array for values
 		if (!part.pseudo[name]) part.pseudo[name] = [];
 
 		// if the native selector could do this selection
-		if (pseudo.support >= pseudoObj["sn"]) {
+		if (pseudo.support >= (pseudoObj["sn"] || 1)) {
 			// create a selector string and add it
 			selector.string += ":" + pseudo.supportedName + (value ? "("+value+")" : "");
 			part.prefereNativeSelector = true;
@@ -874,7 +886,7 @@ function selectorParse (selectString) {
 				// selector target
 				isTarget = getSegment( RxPreMod, targetSupported )[0]; // check if this selector part is the target of the selection
 				// get the tag name
-				tagName = getSegment( RxName, false )[0].toUpperCase() || "*";
+				tagName = getSegment( RxName, false )[0].toLowerCase() || "*";
 				if (tagName && tagName !== "*") {
 					if (nativeSelector) selector.string += tagName;
 					part.tagName = unescapeUse( tagName ); // if there is a tag name unescape it and save it
@@ -1085,7 +1097,7 @@ function selectorTest (element, part) {
 		return false;
 	}
 	// check if the tag name is currect
-	if (part.tagName != null && part.tagName !== "*" && element.nodeName.toUpperCase() !== part.tagName) {
+	if (part.tagName != null && part.tagName !== "*" && element.nodeName.toLowerCase() !== part.tagName) {
 		return false;
 	}
 	// check the classes
@@ -1129,7 +1141,7 @@ function selectorTest (element, part) {
 	}
 	
 	// now if the element does contain what it's supposed to containt it's ok
-	return !part.hasToContain || !doSelect( [part.hasToContain], element ).length;
+	return !part.hasToContain || !!doSelect( [part.hasToContain], element ).length;
 }
 
 /**
