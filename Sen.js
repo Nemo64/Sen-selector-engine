@@ -811,8 +811,8 @@ var parseFuncs = {
 			selector.fullsupport = false;
 			// if there is a getter in the pseudo
 			if (pseudo["get"]) {
-				selector.getter = pseudo["get"];
-				selector.getterValue = pseudoObj;
+				part.getter = pseudo["get"];
+				part.getterValue = pseudoObj;
 			}
 		}
 
@@ -936,7 +936,7 @@ function selectorParse (selectString) {
 		}
 
 		// check if the native selector shouldn't be prefered
-		if ((selector.length === 1 && !selector[0].prefereNativeSelector && selector[0].getElementMethodCount < 2) || selector.getter) {
+		if ((selector.length === 1 && !selector[0].prefereNativeSelector && selector[0].getElementMethodCount < 2) || part.getter) {
 			selector.useNative = false;
 		}
 
@@ -1051,8 +1051,8 @@ function doSelect (selectors, searchOn) {
 			// if there are no results yet (the resulting item has no id or the id was invalid)
 			if (!tmpResult.length && searchOn) {
 				// if this selector should use a getter
-				if (selector.getter) {
-					tmpResult = selector.getter( selector.getterValue, ownerDocument, searchOn );
+				if (part.getter) {
+					tmpResult = part.getter( part.getterValue, ownerDocument, searchOn );
 				// check if class selector is available and if there are classes in our selector part use it
 				} else if (classSelector && part.cls.length) {
 					tmpResult = searchOn.getElementsByClassName( part.cls.join(" ") );
