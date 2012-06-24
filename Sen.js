@@ -55,7 +55,6 @@ select["filterElements"] = function (elements) {
 		: filterElements( elements );
 };
 
-
 ///////////
 // UTILS //
 ///////////
@@ -64,7 +63,7 @@ select["filterElements"] = function (elements) {
 // This won't be in the min version and is just for the compiler
 /** @typedef {Object.<string, Array.<RegExp>>} */
 select.Attr;
-/** @typedef {{ each: function( Node, *, string ):boolean, get: select.Getter, pre: function( string, select.Part ), vendorNames: Array.<string>, testValues: Array.<string>, testHTML: string, testResult: string, support: number, supportedName: string }} */
+/** @typedef {{ each: function( Node, *, string ):boolean, get: select.Getter, pre: function( string, select.Part, select.Selector ), vendorNames: Array.<string>, testValues: Array.<string>, testHTML: string, testResult: string, support: number, supportedName: string }} */
 select.Pseudo;
 /** @typedef {function(*, Node, Node):(Array.<Node>|NodeList)} */
 select.Getter;
@@ -81,8 +80,7 @@ select.Collection;
  * @return {boolean} True if the element is in his document.
  */
 function inDocument(node) {
-	if (node.nodeType === 9) return true;
-	while ((node = node.parentNode) && node.nodeType !== 9) {}
+	while (node.nodeType !== 9 && (node = node.parentNode)) {}
 	return node != null;
 }
 /**
@@ -108,15 +106,21 @@ function filterElements(elements) {
  */
 function makeFlatAndUnique (args) {
 	var result = [];
+	// loop through the value arrays
 	for (var i = 0; i < args.length; ++i) {
 		var arg = args[i];
+		// now loop through the values
 		for (var j = 0; j < arg.length; ++j) {
-			var toCompare = arg[j], alreadyIn = false;
+			var toCompare = arg[j];
+			var alreadyIn = false;
 
-			for (var g = i+1; !alreadyIn && g < args.length; ++g) {
+			// loop through the arrays before to check that this value is unique
+			for (var g = i; !alreadyIn && g--; ) {
 				var compareArray = args[g];
 				for (var k = 0; !alreadyIn && k < compareArray.length; ++k) {
-					if (compareArray[k] === toCompare) alreadyIn = true;
+					if (compareArray[k] === toCompare) {
+						alreadyIn = true;
+					}
 				}
 			}
 			if (!alreadyIn) result.push( toCompare );
@@ -132,7 +136,6 @@ function makeFlatAndUnique (args) {
 function err (message) {
 	if (window.console) console.error( message );
 }
-
 
 ///////////////////////
 // SOME PREPARATIONS //
@@ -154,16 +157,15 @@ function checkElementVersion (nodeVersion, elementVersion) {
  */
 var testDiv = document.createElement( "div" );
 // some checks for getters
-var children       = checkElementVersion("childNodes", "children");
-var nextSibling    = checkElementVersion("nextSibling");
-var prevSibling    = checkElementVersion("previousSibling");
-var firstChild     = checkElementVersion("firstChild");
-var lastChild      = checkElementVersion("lastChild");
+var children       = checkElementVersion( "childNodes", "children" );
+var nextSibling    = checkElementVersion( "nextSibling" );
+var prevSibling    = checkElementVersion( "previousSibling" );
+var firstChild     = checkElementVersion( "firstChild" );
+var lastChild      = checkElementVersion( "lastChild" );
 // check for some more rare selectors
 var classSelector  = !!testDiv.getElementsByClassName; // if the browser supports selecting by class
 var nativeSelector = !!testDiv.querySelector; // if the browser supports a native selector
 var focusCheckable = !!document.hasFocus; // if we can figure out if the document is focused
-
 
 //////////////////////
 // PSEUDO SELECTORS //
@@ -201,9 +203,17 @@ function escapeForRx (string) {
  */
 function nthParse (value) {
 	value = value.toLowerCase();
-	var p = (value === "odd" ? "2n+1" : (value === "even" ? "2n+0" : value) ).match( RxNthV );
-	if (!p) throw "bad nth value: " + value;
-	return { nt: parseInt( p[1], 10 )||0, begin: parseInt( p[2], 10 )||0 };
+	// first look for the case of odd and even
+	var p = value === "odd" ? [,2,1]
+		: value === "even" ? [,2,0]
+	// else parse normal values
+		: value.match( RxNthV );
+	
+	if (!p) throw "bad nth '" + value + "' in";
+	return {
+		nt: parseInt( p[1], 10 )||0,
+		begin: parseInt( p[2], 10 )||0
+	};
 };
 /**
  * for checking if an element matches an nth(?)
@@ -324,6 +334,8 @@ var pseudos = select["pseudo"] = {
 		"each": function (element) {
 			return element.href;
 		},
+		// event though modern browsers return :any-link by using :link it isn't safe to do so.
+		// some browser might select :link correct. (FF 3.5 and opera 10 do so)
 		vendorNames: ["-moz-any-link", "-webkit-any-link"]
 	},
 	"local-link": {
@@ -337,7 +349,6 @@ var pseudos = select["pseudo"] = {
 			return { Rx: RegExp( ":\/{2,3}" + escapeForRx(parts.slice(0, value).join("/")) ) };
 		}
 	},
-
 
 	// CHILDREN
 	"first-child": {
@@ -371,7 +382,6 @@ var pseudos = select["pseudo"] = {
 		"pre": nthParse,
 		testValues: nthTestValues
 	},
-
 
 	// TYPE CHILDREN
 	"first-of-type": {
@@ -416,7 +426,6 @@ var pseudos = select["pseudo"] = {
 		testValues: nthTestValues
 	},
 
-
 	// MATCH CHILDREN
 	"first-match": {
 		"each": function (element, value) {
@@ -452,7 +461,6 @@ var pseudos = select["pseudo"] = {
 		"pre": nthWithPart,
 		testValues: nthTestValues
 	},
-
 
 	// FORM STATUS
 	"disabled": {
@@ -493,7 +501,6 @@ var pseudos = select["pseudo"] = {
 		}
 	},
 
-
 	// INNER ELEMENTS
 	"empty": {
 		"each": function (element) {
@@ -524,7 +531,6 @@ var pseudos = select["pseudo"] = {
 		testValues: selectorTestValues,
 		vendorNames: ["-webkit-any", "-moz-any"]
 	},
-
 
 	// OTHER
 	"target": {
@@ -562,7 +568,6 @@ var pseudos = select["pseudo"] = {
 		testValues: ["ltr"]
 	}
 };
-
 
 ///////////////////
 // SUPPORT TESTS //
@@ -665,7 +670,6 @@ tagNameReturnsComments = testDiv.getElementsByTagName("*").length > 1;
 // destroy testDiv to release memory
 testDiv = null;
 
-
 //////////////////////
 // SELECTOR PARSING //
 //////////////////////
@@ -737,6 +741,7 @@ var parseFuncs = {
 	 */
 	"[": function (part, getSegment, selector) {
 		var segment = getSegment( RxAttr );
+		if (!segment[1]) throw "invalid attribute in";
 
 		var attrName = unescapeUse( segment[1] );
 		var mod = segment[7];
@@ -745,10 +750,8 @@ var parseFuncs = {
 		var hasValue = typeof value === "string";
 		var isInQuotes = hasValue ? RxIsQuote.test( value ) : false;
 
-		if (!segment[0]) throw "invalid attribute in";
-
 		// add this attribute the search list if it doesn't exist yet
-		if (!(attrName in part.attr)) part.attr[attrName] = [];
+		if (!part.attr[attrName]) part.attr[attrName] = [];
 
 		// if this attribute selector is supported rebuild it and add it to full
 		if (nativeSelector && (!mod || attrFullSupported)) {
@@ -794,7 +797,7 @@ var parseFuncs = {
 		var pseudo = getPseudo( name );
 
 		// use the pseudo parse function if there is any or just crate a pseudo object with basic infos
-		var pseudoObj = pseudo["pre"] ? pseudo["pre"]( value, part ) : value;
+		var pseudoObj = pseudo["pre"] ? pseudo["pre"]( value, part, selector ) : value;
 		if (pseudoObj == null) throw false; // the value must not be null or undefined 
 
 		// if pseudo used the first time create an array for values
@@ -893,12 +896,10 @@ function selectorParse (selectString) {
 					++part.getElementMethodCount; // this is a getElementMethod
 				} else selector.string += "*";
 
-
 				// now, depending on the next char, call parser functions
 				while (parseFuncs[string.charAt(0)]) {
 					parseFuncs[string.charAt(0)](part, getSegment, selector);
 				}
-
 
 				// handle target
 				// TODO: this shouldn't be seperated from the main query (mayor performance loose)
@@ -917,7 +918,6 @@ function selectorParse (selectString) {
 					if (classSelector) ++part.getElementMethodCount; 
 					else part.prefereNativeSelector = true;
 				}
-
 
 			} while (string && !RxNextOne.test(string)); // as long as there is no comma but more string
 
@@ -947,18 +947,17 @@ function selectorParse (selectString) {
 	return selectorCache[selectString] = selectors;
 }
 
-
 /////////////////////////
 // SELECTION FUNCTIONS //
 /////////////////////////
 
 /**
  * Selects elements in the document, on an element or a list of elements
- * @param {select.Collection} selectors          The parsed selector to use.
- * @param {Array.<Node>|Node|NodeList} searchOn  The element(s) to search on.
+ * @param {select.Collection} selectors                The parsed selector to use.
+ * @param {Array.<Node>|Node|NodeList} globalSearchOn  The element(s) to search on.
  * @return {Array.<Node>} A list of matching elements
  */
-function doSelect (selectors, searchOn) {
+function doSelect (selectors, globalSearchOn) {
 
 	/**
 	 * this is an array of array results
@@ -975,19 +974,19 @@ function doSelect (selectors, searchOn) {
 	// we need to decide on which element the selectors should be cast
 	// if it is an array we search use the document node of the first
 	// TODO: support array of elements from multible documents
-	if (typeof searchOn.length === "number") {
+	if (typeof globalSearchOn.length === "number") {
 		// use all given elements as origin
-		origins = filterElements( /** @type {Array.<Node>} */ (searchOn) );
+		origins = filterElements( /** @type {Array.<Node>} */ (globalSearchOn) );
 
 		// if the origin array is empty there also can't be any results
 		if (origins.length === 0) return [];
 		// if the origin array has one entry we might as well search from it
-		else if (origins.length === 1) searchOn = origins[0];
-		// else we search from the document so we don't have to selecto multible times
-		else searchOn = origins[0].ownerDocument;
+		else if (origins.length === 1) globalSearchOn = origins[0];
+		// else we search from the document so we don't have to select multible times
+		else globalSearchOn = origins[0].ownerDocument;
 	// if the searchOn is an element or a document search from it
-	} else if (searchOn.nodeType === 1 || searchOn.nodeType === 9) {
-		origins = [searchOn];
+	} else if (globalSearchOn.nodeType === 1 || globalSearchOn.nodeType === 9) {
+		origins = [globalSearchOn];
 	// else this seems to be no valid input so there will be an empty output
 	} else return [];
 
@@ -997,17 +996,20 @@ function doSelect (selectors, searchOn) {
 	 * This way there is no need of selecting the same elements multible times.
 	 * @type {Node}
 	 */
-	searchOn;
+	globalSearchOn;
 
 	/**
 	 * the document of the element
 	 * @type {Node}
 	 */
-	var ownerDocument = (searchOn.nodeType === 9 ? searchOn : searchOn.ownerDocument);
+	var ownerDocument = (globalSearchOn.nodeType === 9 ? globalSearchOn : globalSearchOn.ownerDocument);
 
+	// loop selectors
 	for (var i = 0; i < selectors.length; ++i) {
 		var selector = selectors[i];
 		var useNative = (nativeSelector && selector.useNative && !selector.nativeFailed);
+		var searchOn = globalSearchOn;
+		var forceFiltering = false;
 		/**
 		 * the results of the selector
 		 * @type {Array.<Node>|NodeList}
@@ -1025,45 +1027,49 @@ function doSelect (selectors, searchOn) {
 
 		// if this selector has to be done simple
 		if (!useNative) {
-			var part = selector[selector.length - 1];
+			var endPart = selector[selector.length - 1];
 
 			// the id selector should always be used if searched for an id
-			// if in our selector is a id and our searchOn is in the document
-			if (selector.idPart != null && inDocument( /** @type {Node} */ (searchOn) )) {
+			// if in our selector is a id and our searchOn is inside the document
+			if (selector.idPart != null && inDocument( searchOn )) {
 				/** @type {select.Part} */
 				var idPart = selector[selector.idPart];
-				/** @type {Node} */
+				/** @type {Node|null} */
 				var ele = ownerDocument.getElementById( idPart.id );
 
 				// if there was an element found and if it matches the id exactly (case insensitive bug in some browsers)
 				if (ele && ele.id === idPart.id) {
 					// check if it matches the selector until the idPart
-					if (selectorMatch( selector.slice(0, selector.idPart+1), ele, origins )) {
+					// this also irons out the chance that the node isn't in the document (bug in Blackberry 4.6)
+					// AND we remove the chance of selecting an element outside our origins
+					if (selectorMatch( [selector.slice(0, selector.idPart+1)], ele, origins )) {
 						// this is our result if the idPart is the last part
-						if (idPart === part) tmpResult = [ele];
+						if (idPart === endPart) tmpResult = [ele];
 						// else it is our new searchOn for the next selectors
 						else searchOn = ele;
-					// if it doesn't match
+					// if it doesn't match there can't be any (valid) result
 					} else searchOn = null;
 				}
+				// else the dom has to be traverseled the oldschool way
 			}
 
-			// if there are no results yet (the resulting item has no id or the id was invalid)
+			// if there are no results yet
 			if (!tmpResult.length && searchOn) {
-				// if this selector should use a getter
-				if (part.getter) {
-					tmpResult = part.getter( part.getterValue, ownerDocument, searchOn );
+				// if this selector has a getter (pseudos do that if they already know possible results)
+				if (endPart.getter) {
+					tmpResult = endPart.getter( endPart.getterValue, ownerDocument, searchOn );
 				// check if class selector is available and if there are classes in our selector part use it
-				} else if (classSelector && part.cls.length) {
-					tmpResult = searchOn.getElementsByClassName( part.cls.join(" ") );
+				} else if (classSelector && endPart.cls.length) {
+					tmpResult = searchOn.getElementsByClassName( endPart.cls.join(" ") );
 				// check if the selector part searches for a name attribute and use that selector
-				} else if (part.searchName != null) {
-					tmpResult = ownerDocument.getElementsByName( part.searchName );
+				} else if (endPart.searchName != null) {
+					tmpResult = ownerDocument.getElementsByName( endPart.searchName );
+					if (ownerDocument !== searchOn) forceFiltering = true; // because we searched on the document instead of the searchOn
 				// else use the tagName selector (tagName is * star if there wasn't a tag name selected)
 				} else {
-					tmpResult = searchOn.getElementsByTagName( part.tagName );
-					// if searched for a "*", ie returns comments
-					if (tagNameReturnsComments && part.tagName === "*") {
+					tmpResult = searchOn.getElementsByTagName( endPart.tagName );
+					// if searched for a "*", ie returns comments too
+					if (tagNameReturnsComments && endPart.tagName === "*") {
 						tmpResult = filterElements( tmpResult );
 					}
 				}
@@ -1072,9 +1078,10 @@ function doSelect (selectors, searchOn) {
 
 		// use the filter the elements if ...
 		if (tmpResult.length // ... we have results AND ...
-		 && (origins.length > 1 || !selector.fullsupport // ... more than one origin was used, lack of support, ...
-		 || (!nativeSelector && selector.useNative) || selector.nativeFailed // ... native selector wasn't used but should have been ...
-		)) {
+		 && (forceFiltering || origins.length > 1 || !selector.fullsupport // ... check is forced, more than one origin was used, lack of support, ...
+		     || (!nativeSelector && selector.useNative) || selector.nativeFailed // ... native selector wasn't used but should have been ...
+		    )
+		) {
 			tmpResult = filterSelector( [selector], tmpResult, origins );
 		}
 
@@ -1139,7 +1146,7 @@ function selectorTest (element, part) {
 			}
 		}
 	}
-	
+
 	// now if the element does contain what it's supposed to containt it's ok
 	return !part.hasToContain || !!doSelect( [part.hasToContain], element ).length;
 }
@@ -1206,7 +1213,7 @@ function selectorMatch (selectors, sourceElement, origins) {
 				}
 			// fake selector relation for the first part to check if the given element matches the given element
 			} else test();
-			
+
 			// remember the last relation
 			if (part) lastRel = part.relation;
 		}
@@ -1229,7 +1236,6 @@ function filterSelector (selectors, elementList, origins) {
 	}
 	return newList;
 }
-
 
 // expose to window
 window["select"] = select;
