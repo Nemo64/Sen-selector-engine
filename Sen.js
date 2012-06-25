@@ -13,8 +13,18 @@
  * @return {Array.<Node>} The found Elements.
  */
 function select(selectorString, searchIn) {
-	return doSelect( selectorParse(selectorString), searchIn == null ? document : searchIn );
+	return /** @type {Array.<Node>} */ selectByString( selectorString, searchIn, false );
 };
+/**
+ * Same as above but only selects one element.
+ * @export
+ * @param {string} selectorString                 The selector.
+ * @param {Node|Array.<Node>|NodeList=} searchIn  The element(s) to search in. (optional)
+ * @return {Node} The found Element or null.
+ */
+select["one"] = function (selectorString, searchIn) {
+	return /** @type {Node} */ selectByString( selectorString, searchIn, true );
+}
 /**
  * Tests if an element matches the selector.
  * @export
@@ -67,13 +77,23 @@ select.Attr;
 select.Pseudo;
 /** @typedef {function(*, Node, Node):(Array.<Node>|NodeList)} */
 select.Getter;
-/** @typedef {{ relation: string, tagName: string, id: (string|null), cls: Array.<string>, attr: select.Attr, searchName: (string|null), pseudo: Object.<string, Array.<*>>, hasToContain: (select.Selector|null), getElementMethodCount: number, prefereNativeSelector: boolean, nativeFailed: boolean }} */
+/** @typedef {{ relation: string, elementName: string, id: (string|null), cls: Array.<string>, attr: select.Attr, searchName: (string|null), pseudo: Object.<string, Array.<*>>, hasToContain: (select.Selector|null), getElementMethodCount: number, prefereNativeSelector: boolean, nativeFailed: boolean }} */
 select.Part;
 /** @typedef {Array.<select.Part>|{ string: string, fullsupport: boolean, useNative: boolean, getter: select.Getter, getterValue: * }} */
 select.Selector;
 /** @typedef {Array.<select.Selector>} */
 select.Collection;
 
+/**
+ * This function is like doSelect but needs a string instead of a selector
+ * @param {string} selectorString                          The selector.
+ * @param {Node|Array.<Node>|NodeList|undefined} searchIn  The element(s) to search in. (optional)
+ * @param {boolean} oneResult                              If only one result should be returned
+ * @return {Array.<Node>|Node} The found Elements.
+ */
+function selectByString (selectorString, searchIn, oneResult) {
+	return doSelect( selectorParse(selectorString), searchIn == null ? document : searchIn, oneResult );
+}
 /**
  * Checks if an element is in it's document.
  * @param {Node} node  The element to check
@@ -209,7 +229,7 @@ function nthParse (value) {
 	// else parse normal values
 		: value.match( RxNthV );
 	
-	if (!p) throw "bad nth '" + value + "' in";
+	if (!p) throw "invalid nth '" + value + "'";
 	return {
 		nt: parseInt( p[1], 10 )||0,
 		begin: parseInt( p[2], 10 )||0
@@ -525,7 +545,7 @@ var pseudos = select["pseudo"] = {
 			return selectorMatch( value.selectors, element );
 		},
 		"get": function (value, ownerDocument, searchOn) {
-			return doSelect( value.selectors, searchOn );
+			return doSelect( value.selectors, searchOn, false );
 		},
 		"pre": psParse,
 		testValues: selectorTestValues,
@@ -539,7 +559,7 @@ var pseudos = select["pseudo"] = {
 			return hash && element.id === hash;
 		},
 		"get": function (value, ownerDocument) {
-			var node = ownerDocument.getElementById(location.hash.substr(1));
+			var node = ownerDocument.getElementById( location.hash.substr(1) );
 			return node ? [node] : [];
 		}
 	},
@@ -676,18 +696,18 @@ testDiv = null;
 
 // A bunch of regular expression for the parsing of an selector
 var RxRelate   = /^\s*([>+~]?)\s*/m;
-var RxName     = /^\*|^([\w-]|\\.)*/m;
-var RxId       = /^#(([\w-]|\\.)*)/m;
-var RxClass    = /^\.(([\w-]|\\.)*)/m;
-var RxPseudo   = /^:([\w-]*)(\s*\((([^()]*|\(([^()]*|\([^()]*\))*\))*)\))*/m;
-var RxAttr     = /^\[(([\w-]|\\.)*)(([\^*$|]?)=(['"]([^\\'"]|\\.)*['"]|[\w-]*)(\s*i)?)?\]/m;
+var RxName     = /^\*|^([\w-]|\\.)+/m;
+var RxId       = /^#(([\w-]|\\.)+)/m;
+var RxClass    = /^\.(([\w-]|\\.)+)/m;
+var RxPseudo   = /^:([\w-]+)(\((([^()]*|\(([^()]*|\([^()]*\))*\))*)\))*/m;
+var RxAttr     = /^\[(([\w-]|\\.)+)(([\^*$|]?)=(['"]([^\\'"]|\\.)*['"]|[\w-]*)(\s*i)?)?\]/m;
 var RxPreMod   = /^\$/m;
 var RxNextOne  = /^\s*,\s*/m;
 var RxSSplit   = /\s+/g;
 var RxIsQuote  = /^['"].*['"]$/m;
 var RxBorderMod= /^[\^*$]/m;
 var RxSkipOne  = /^\s*((\((([^()]*|\(([^()]*|\([^()]*\))*\))*)\)|['"]([^\\'"]|\\.)*['"]|\\,|[^,])*)\s*/m;
-var RxATList   = { '':["^","$"], '*':["",""], '^':["^",""], '$':["","$"], '~':["(^| )","( |$)"], '|':["^","(-|$)"] };
+var RxATList   = { "":["^","$"], "*":["",""], "^":["^",""], "$":["","$"], "~":["(^| )","( |$)"], "|":["^","(-|$)"] };
 /**
  * Cached selectors
  * @type {Object.<string, select.Collection>}
@@ -712,7 +732,7 @@ var parseFuncs = {
 
 		// get the id out of the selector
 		var segment = getSegment( RxId, true );
-		if (!segment[1]) throw "invalid id in";
+		if (!segment[1]) throw "invalid id";
 
 		part.id = unescapeUse( segment[1] ); // unescape the id and return it
 		selector.idPart = selector.length - 1; // tell that this part has the last id in the selector
@@ -727,7 +747,7 @@ var parseFuncs = {
 	".": function (part, getSegment, selector) {
 		// get the class out of the selector
 		var segment = getSegment( RxClass, true);
-		if (!segment[1]) throw "invalid class in";
+		if (!segment[1]) throw "invalid class";
 
 		// add the class to the class list
 		part.cls.push( unescapeUse(segment[1]) );
@@ -741,7 +761,7 @@ var parseFuncs = {
 	 */
 	"[": function (part, getSegment, selector) {
 		var segment = getSegment( RxAttr );
-		if (!segment[1]) throw "invalid attribute in";
+		if (!segment[1]) throw "invalid attribute";
 
 		var attrName = unescapeUse( segment[1] );
 		var mod = segment[7];
@@ -790,7 +810,7 @@ var parseFuncs = {
 	":": function (part, getSegment, selector) {
 		// get the pseudo
 		var segment = getSegment( RxPseudo );
-		if (!segment[0]) throw "invalid pseudo in";
+		if (!segment[0]) throw "invalid pseudo";
 
 		var name = segment[1];
 		var value = segment[3] || "";
@@ -858,11 +878,11 @@ function selectorParse (selectString) {
 				 * @type {select.Part}
 				 */
 				var part = {
-					relation: "", tagName: "*", id: null, cls: [], attr: {}, searchName: null, pseudo: {}, hasToContain: null,
+					relation: "", elementName: "*", id: null, cls: [], attr: {}, searchName: null, pseudo: {}, hasToContain: null,
 					getElementMethodCount: 0, prefereNativeSelector: false, nativeFailed: false
 				};
 				// variables for later
-				var isTarget, tagName;
+				var isTarget, elementName;
 				// push it into the selector
 				selector.push( part );
 
@@ -889,10 +909,10 @@ function selectorParse (selectString) {
 				// selector target
 				isTarget = getSegment( RxPreMod, targetSupported )[0]; // check if this selector part is the target of the selection
 				// get the tag name
-				tagName = getSegment( RxName, false )[0].toLowerCase() || "*";
-				if (tagName && tagName !== "*") {
-					if (nativeSelector) selector.string += tagName;
-					part.tagName = unescapeUse( tagName ); // if there is a tag name unescape it and save it
+				elementName = getSegment( RxName, false )[0].toLowerCase() || "*";
+				if (elementName && elementName !== "*") {
+					if (nativeSelector) selector.string += elementName;
+					part.elementName = unescapeUse( elementName ); // if there is a tag name unescape it and save it
 					++part.getElementMethodCount; // this is a getElementMethod
 				} else selector.string += "*";
 
@@ -910,7 +930,7 @@ function selectorParse (selectString) {
 				}
 
 				// throw error if the parser hasn't done anything yet
-				if (!somethingAdded) throw "couldn't parse";
+				if (!somethingAdded) throw "couldn't parse '" + string + "'";
 
 				// if there were classes in the selector
 				if (part.cls.length) {
@@ -930,7 +950,7 @@ function selectorParse (selectString) {
 				selectors.pop(); // remove everything the loop has created for the defect selector
 			// if the thrown object is a string extend it and throw real error
 			} else if (typeof e === "string") {
-				throw SyntaxError(e + " selector: '" + selectString + "'"); // throw SyntaxError
+				throw SyntaxError(e + " in selector: '" + selectString + "'"); // throw SyntaxError
 			// else this isn't our error so just throw it further
 			} else throw e;
 		}
@@ -955,9 +975,10 @@ function selectorParse (selectString) {
  * Selects elements in the document, on an element or a list of elements
  * @param {select.Collection} selectors                The parsed selector to use.
  * @param {Array.<Node>|Node|NodeList} globalSearchOn  The element(s) to search on.
- * @return {Array.<Node>} A list of matching elements
+ * @param {boolean} oneResult                          If true only one result will be returned or null if there are none
+ * @return {Array.<Node>|Node} A list of matching elements or, if oneResult is true, a result node or null
  */
-function doSelect (selectors, globalSearchOn) {
+function doSelect (selectors, globalSearchOn, oneResult) {
 
 	/**
 	 * this is an array of array results
@@ -1053,23 +1074,23 @@ function doSelect (selectors, globalSearchOn) {
 				// else the dom has to be traverseled the oldschool way
 			}
 
-			// if there are no results yet
+			// if there are no results through the id selector
 			if (!tmpResult.length && searchOn) {
 				// if this selector has a getter (pseudos do that if they already know possible results)
 				if (endPart.getter) {
 					tmpResult = endPart.getter( endPart.getterValue, ownerDocument, searchOn );
-				// check if class selector is available and if there are classes in our selector part use it
+				// use class selector if available and if there are classes in our selector part
 				} else if (classSelector && endPart.cls.length) {
 					tmpResult = searchOn.getElementsByClassName( endPart.cls.join(" ") );
-				// check if the selector part searches for a name attribute and use that selector
-				} else if (endPart.searchName != null) {
+				// use name selector if the selector part searches for a name attribute and the searchOn is inside its document
+				} else if (endPart.searchName != null && inDocument( searchOn )) {
 					tmpResult = ownerDocument.getElementsByName( endPart.searchName );
 					if (ownerDocument !== searchOn) forceFiltering = true; // because we searched on the document instead of the searchOn
-				// else use the tagName selector (tagName is * star if there wasn't a tag name selected)
+				// else use the elementName selector (elementName is * star if there wasn't a tag name selected)
 				} else {
-					tmpResult = searchOn.getElementsByTagName( endPart.tagName );
+					tmpResult = searchOn.getElementsByTagName( endPart.elementName );
 					// if searched for a "*", ie returns comments too
-					if (tagNameReturnsComments && endPart.tagName === "*") {
+					if (tagNameReturnsComments && endPart.elementName === "*") {
 						tmpResult = filterElements( tmpResult );
 					}
 				}
@@ -1077,19 +1098,21 @@ function doSelect (selectors, globalSearchOn) {
 		}
 
 		// use the filter the elements if ...
-		if (tmpResult.length // ... we have results AND ...
-		 && (forceFiltering || origins.length > 1 || !selector.fullsupport // ... check is forced, more than one origin was used, lack of support, ...
-		     || (!nativeSelector && selector.useNative) || selector.nativeFailed // ... native selector wasn't used but should have been ...
-		    )
+		if (
+			forceFiltering || origins.length > 1 || !selector.fullsupport // ... check is forced, more than one origin was used, lack of support or ...
+			 || (!nativeSelector && selector.useNative) || selector.nativeFailed // ... native selector wasn't used but should have been.
 		) {
-			tmpResult = filterSelector( [selector], tmpResult, origins );
+			tmpResult = filterSelector( [selector], tmpResult, origins, oneResult );
 		}
 
 		// if there are still elements in the array add them
-		if (tmpResult.length) results.push( tmpResult );
+		if (tmpResult.length) {
+			if (oneResult) return tmpResult[0];
+			else results.push( tmpResult );
+		}
 	}
 
-	return makeFlatAndUnique( results );
+	return oneResult ? null : makeFlatAndUnique( results );
 }
 
 /**
@@ -1104,7 +1127,7 @@ function selectorTest (element, part) {
 		return false;
 	}
 	// check if the tag name is currect
-	if (part.tagName != null && part.tagName !== "*" && element.nodeName.toLowerCase() !== part.tagName) {
+	if (part.elementName !== "*" && element.nodeName.toLowerCase() !== part.elementName) {
 		return false;
 	}
 	// check the classes
@@ -1121,7 +1144,10 @@ function selectorTest (element, part) {
 		var attrRx = part.attr[attrName];
 
 		// check if attribute exists
-		if (typeof attr !== "string") return false;
+		// funfact: the specs say that getAttribute should always return a string
+		// but all browsers (even ie) return null if an attribute doesn't exist
+		// see: http://www.w3.org/TR/DOM-Level-2-Core/core.html#ID-666EE0F9
+		if (attr == null) return false;
 
 		// check if attribute value is currect
 		for (var i = 0; i < attrRx.length; ++i) {
@@ -1148,7 +1174,7 @@ function selectorTest (element, part) {
 	}
 
 	// now if the element does contain what it's supposed to containt it's ok
-	return !part.hasToContain || !!doSelect( [part.hasToContain], element ).length;
+	return !part.hasToContain || doSelect( [part.hasToContain], element, true ) != null;
 }
 
 /**
@@ -1165,7 +1191,7 @@ function selectorMatch (selectors, sourceElement, origins) {
 		var matches = true;
 		var lastRel = null;
 		var element = sourceElement;
-		var checkUntil = origins != null && origins.length ? -1 : 0;
+		var checkUntil = origins != null ? -1 : 0;
 		// loop the selector parts backwards
 		while (s-- > checkUntil && matches) {
 			var part = selector[s];
@@ -1190,27 +1216,17 @@ function selectorMatch (selectors, sourceElement, origins) {
 
 			// normal selector, loops the dom up until match
 			if (lastRel === "") {
-				while (element = element.parentNode) {
-					if (test()) break;
-				}
+				while ((element = element.parentNode) && !test()) {}
 			// basic children selector, goes one up
 			} else if (lastRel === ">") {
 				element = element.parentNode;
 				test();
 			// sibling selectors (will never select document so just nodeType === 1)
 			} else if (lastRel === "+") {
-				while (element = element[prevSibling]) {
-					if (element.nodeType === 1) {
-						test();
-						break;
-					}
-				}
+				while ((element = element[prevSibling]) && element.nodeType !== 1) {}
+				test();
 			} else if (lastRel === "~") {
-				while (element = element[prevSibling]) {
-					if (element.nodeType === 1 && test()) {
-						break;
-					}
-				}
+				while ((element = element[prevSibling]) && (element.nodeType !== 1 || !test())) {}
 			// fake selector relation for the first part to check if the given element matches the given element
 			} else test();
 
@@ -1226,13 +1242,17 @@ function selectorMatch (selectors, sourceElement, origins) {
  * @param {select.Collection} selectors  a parsed selector
  * @param {Array.<Node>} elementList     the array that has to be reduced
  * @param {Array|Node=} origins          the element that is before the selector (optional)
+ * @param {boolean=} oneResult           if true the matcher stops on the first result
  * @return {Array.<Node>} The list of matching elements.
  */
-function filterSelector (selectors, elementList, origins) {
+function filterSelector (selectors, elementList, origins, oneResult) {
 	var newList = [];
 	for (var i = 0; i < elementList.length; ++i) {
 		var element = elementList[i];
-		if (selectorMatch( selectors, element, origins )) newList.push( element );
+		if (selectorMatch( selectors, element, origins )) {
+			if (oneResult) return [element];
+			else newList.push( element );
+		}
 	}
 	return newList;
 }
