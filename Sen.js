@@ -1058,12 +1058,12 @@ function doSelect (selectors, globalSearchOn, oneResult) {
 				/** @type {Node|null} */
 				var ele = ownerDocument.getElementById( idPart.id );
 
-				// if there was an element found and if it matches the id exactly (case insensitive bug in some browsers)
-				if (ele && ele.id === idPart.id) {
+				// if there are no elements or if the element matches the id exactly (case insensitive bug in some browsers)
+				if (!ele || ele.id === idPart.id) {
 					// check if it matches the selector until the idPart
 					// this also irons out the chance that the node isn't in the document (bug in Blackberry 4.6)
 					// AND we remove the chance of selecting an element outside our origins
-					if (selectorMatch( [selector.slice(0, selector.idPart+1)], ele, origins )) {
+					if (ele && selectorMatch( [selector.slice(0, selector.idPart+1)], ele, origins )) {
 						// this is our result if the idPart is the last part
 						if (idPart === endPart) tmpResult = [ele];
 						// else it is our new searchOn for the next selectors
