@@ -36,8 +36,9 @@ select["one"] = function (selectorString, searchIn) {
 select["test"] = function (selectorString, toTest, origin) {
 	return toTest != null && toTest.nodeType === 1
 		? selectorMatch(
-				selectorParse(selectorString), toTest,
-				/** @type {Array.<Node>|NodeList} */((origin && typeof origin.length !== "number") ? [origin] : origin)
+					selectorParse(selectorString), toTest,
+					/** @type {Array.<Node>|NodeList} */
+					((origin && typeof origin.length !== "number") ? [origin] : origin)
 			)
 		: false;
 };
@@ -76,7 +77,7 @@ select.Attr;
 select.Pseudo;
 /** @typedef {function(*, Node, Node):(Array.<Node>|NodeList)} */
 select.Getter;
-/** @typedef {{ relation: string, elementName: string, id: (string|null), cls: Array.<string>, attr: select.Attr, searchName: (string|null), pseudo: Object.<string, Array.<*>>, hasToContain: (select.Selector|null), getElementMethodCount: number, prefereNativeSelector: boolean, nativeFailed: boolean }} */
+/** @typedef {{ relation: string, elementName: string, id: (string|null), cls: Array.<string>, attr: select.Attr, pseudo: Object.<string, Array.<*>>, hasToContain: (select.Selector|null), getElementMethodCount: number, prefereNativeSelector: boolean, nativeFailed: boolean }} */
 select.Part;
 /** @typedef {Array.<select.Part>|{ string: string, fullsupport: boolean, useNative: boolean, getter: select.Getter, getterValue: * }} */
 select.Selector;
@@ -644,7 +645,7 @@ function getPseudo (pname) {
 		// if there are testVals check them
 		if (pseudo.testValues) {
 			var testValues = pseudo.testValues;
-			for (var i = 0; i < testValues.length && testSelect( ":"+name+"("+testValues[i]+")", testDiv ) === testResult; ++i) {
+			for (var i = 0; i < testValues.length && testSelect( ":" + name + "(" + testValues[i] + ")", testDiv ) === testResult; ++i) {
 				// if the support is better with this name change the prefered name
 				if (i >= sLevel) {
 					sLevel = i+1;
@@ -779,7 +780,7 @@ var parseFuncs = {
 
 		// if this attribute selector is supported rebuild it and add it to full
 		if (nativeSelector && (!mod || attrFullSupported)) {
-			selector.string += "["+segment[1]+(hasValue ? (type+'='+(isInQuotes ? value : '"'+value+'"')+(mod||"")) : "")+"]";
+			selector.string += "[" + segment[1] + (hasValue ? (type + '=' + (isInQuotes ? value : '"' + value + '"') + (mod || "")) : "") + "]";
 		// else this selector can't be done fully natively
 		} else selector.fullsupport = false;
 
@@ -789,21 +790,15 @@ var parseFuncs = {
 			if (value === "" && RxBorderMod.test( mod )) {
 				throw false; // skip this selector
 			}
-			// unescape if surrounded by quoted
-			if (isInQuotes) value = unescapeUse( value );
-
-			// if this is a possible candidate for getElementByName
-			if (attrName === "name" && !mod && type === "") {
-				part.searchName = value;
-				++part.getElementMethodCount;
-			// if not prefere the native selector
-			} else part.prefereNativeSelector = true;
-
 			// create an expression that can simply be used on the attribute
-			part.attr[attrName].push( RegExp(RxATList[type][0] + escapeForRx(value) + RxATList[type][1], mod ? 'im' : 'm') );
-
-		// if this is just a "has attribute" selector prefere to do it natively
-		} else part.prefereNativeSelector = true;
+			part.attr[attrName].push(RegExp(
+					RxATList[type][0] + escapeForRx( isInQuotes ? unescapeUse(value) : value ) + RxATList[type][1],
+					mod ? 'im' : 'm'
+			));
+			
+		}
+		// use the native selector
+		part.prefereNativeSelector = true;
 	},
 	/**
 	 * This is the parser function for pseudo selectors
@@ -883,7 +878,7 @@ function selectorParse (selectString) {
 				 * @type {select.Part}
 				 */
 				var part = {
-					relation: "", elementName: "*", id: null, cls: [], attr: {}, searchName: null, pseudo: {}, hasToContain: null,
+					relation: "", elementName: "*", id: null, cls: [], attr: {}, pseudo: {}, hasToContain: null,
 					getElementMethodCount: 0, prefereNativeSelector: false, nativeFailed: false
 				};
 				// variables for later
@@ -1036,7 +1031,6 @@ function doSelect (selectors, globalSearchOn, oneResult) {
 		var selector = selectors[i];
 		var useNative = (nativeSelector && selector.useNative && !selector.nativeFailed);
 		var searchOn = globalSearchOn;
-		var forceFiltering = false;
 		/**
 		 * the results of the selector
 		 * @type {Array.<Node>|NodeList}
@@ -1088,10 +1082,6 @@ function doSelect (selectors, globalSearchOn, oneResult) {
 				// use class selector if available and if there are classes in our selector part
 				} else if (classSelector && endPart.cls.length) {
 					tmpResult = searchOn.getElementsByClassName( endPart.cls.join(" ") );
-				// use name selector if the selector part searches for a name attribute and the searchOn is inside its document
-				} else if (endPart.searchName != null && inDocument( searchOn )) {
-					tmpResult = ownerDocument.getElementsByName( endPart.searchName );
-					if (ownerDocument !== searchOn) forceFiltering = true; // because we searched on the document instead of the searchOn
 				// else use the elementName selector (elementName is * star if there wasn't a tag name selected)
 				} else {
 					tmpResult = searchOn.getElementsByTagName( endPart.elementName );
@@ -1105,7 +1095,7 @@ function doSelect (selectors, globalSearchOn, oneResult) {
 
 		// use the filter the elements if ...
 		if (
-			forceFiltering || origins.length > 1 || !selector.fullsupport // ... check is forced, more than one origin was used, lack of support or ...
+			origins.length > 1 || !selector.fullsupport // ... check is forced, more than one origin was used, lack of support or ...
 			 || (!nativeSelector && selector.useNative) || selector.nativeFailed // ... native selector wasn't used but should have been.
 		) {
 			tmpResult = filterSelector( [selector], tmpResult, origins, oneResult );
