@@ -2,6 +2,19 @@
 ## What is Sen?
 This here is a JavaScript CSS selector engine that was build with the querySelector API in mind. That means that as much work as possible will be put onto the browsers selector engine and only the missing features will be emulated (if any).
 
+## Why use it?
+Ever had that problem that a specific selector would make your life simpler but you didn't want to sacrifice the querySelector on older browsers. This is for you than. Take this example:
+
+`a:first-of-type:any-link` isn't supported in any browser yet because `any-link` is planed for css4. What does Sen do? It checks if the pseudos are supported and than create a query matching to your current browser.
+
+Firefox would execute this: `a:first-of-type:-moz-any-link` and no check will be done afterwards which saves time and you get your result faster.
+
+Any other CSS 3 capable browser will execute this: `a:first-of-type` and the `any-link` will be checked later manually but our result is than already limited to real links so the check will be faster.
+
+IE 8 only supports CSS 2.1 so it should execute just `a` but because it wouldn't need the querySelector than, it just executes `getElementsByTagName("a")` and than filter the results. In that way we at least saved the overhead that comes with every call of the querySelector.
+
+Conclusion: Sen always uses the best way to get to the goal. The work of deciding which is the best way will be cached so if a selector has to be used many times you get the fastest result possible.
+
 ## Which browsers are supported?
 - Internet Explorer **6+**
 - Firefox **3+** (Firefox 1.5+ only fails on the :focus pseudo)
@@ -15,12 +28,14 @@ The best way is to run `compile.bat` on windows or `compile.sh` everywhere else.
 ## basic selection
 Just use `select( "div#withId" )`. This will return an Array (not a NodeList) with all elements that match the selector. Sen will normaly search in the document in which it was included. This can be changed with the second optional parameter.
 
-If you want to select all elements within an element, an array of elements or another document use `select( "div.with.classes", DOMElement )`. Note that if the second parameter isn't a document or a DOMElement the result will always be empty except if the parameter is null or undefined which will result into the same behavior as if the parameter weren't set at all.
+If you want to select all elements within an element, an array of elements or another document use `select( "div.with.classes", Document|Element|NodeList|Array.<Node> )`. Note that if the second parameter isn't valid the result will always be empty except if the parameter is null or undefined which will result into the same behavior as if the parameter weren't set at all.
+
+Sometimes you just want to select one element just put a point between select and one and you got it. ;) `select.one( "selector", Element... )` will return one element or `null` if there are no matches. This is mostly a lot faster than the alternative.
 
 ## matching and filtering
-If you already have a collection of elements (any enumerable object will do like NodeList etc.) and just want to reduce them with a selector use `select.filter( "a:any-link", [ DOMElement, ... ] )`. This will return all link elements that are actual links as Array. If the second parameter is not an array of DOMElements the result will always be empty.
+If you already have a collection of elements (any enumerable object will do like NodeList etc.) and just want to reduce them with a selector use `select.filter( "a:any-link", [ Element, ... ] )`. This will return all link elements that are actual links as Array. If the second parameter is not an array of Elements (or a NodeList) the result will always be empty.
 
-If you just want to test if an element matches an selector use `select.test( "ul > li", DOMElement )`. This will return true if the element is an *li* that is a child of an *ul* or false if not. It will also return false if the second parameter is not a DOMElement.
+If you just want to test if an element matches an selector use `select.test( "ul > li", Element )`. This will return true if the element is an *li* that is a child of an *ul* or false if not. It will also return false if the second parameter is not a Element.
 
 # Supported Selectors
 ## basic selectors
@@ -30,6 +45,9 @@ If you need to select an item that has an invalid id or class you can escape tho
 
 ## relation selectors
 These are selectors that contain multiple selectors. Selectors like: `li a` will select all anchors that are in list items. It is called a descendant relation. But there are more like: `ul > li` which is a child selector. It will get you all list items that direct children of an unordered list. The more rare used relations like `h1 + p` and `hr ~ p` are also supported, look in the specs for them.
+
+As a bonus css4's subject is supported as well BUT it is a subject to change, look [here](http://www.w3.org/TR/selectors4/#subject) for the specs. However here the short version:
+`select( "$ul > li:only-of-type" )` would select all unordered lists that have one list-item as direct child.
 
 ## attribute selectors
 Sometimes you want to select elements after an attribute for example if you look for inputs. Such a selector would look like this `input[type="text"]`. You should always try to add a tag name so that the emulation in IE 6 and 7 won't have to check the every single element in the document.
@@ -58,21 +76,23 @@ A huge part of Sen are pseudo selectors. Most of the CSS 3 pseudo selectors and 
 - `:last-child` same but last child
 - `:only-child` only matches if there are no other siblings around it.
 - `:nth-child(n)` matches only specific children. The value *3* would match only the 3rd child. Also possible is *2n* which would match every 2nd child. This can even be more defined with *2n+1* which means every 2nd child beginning with 1. Also possible are the values *odd* and *even*.
-- `:nth-last-child` same as above except it counts from the bottom
+- `:nth-last-child(n)` same as above except it counts from the bottom
 
 ### typed children selectors
 - `:first-of-type` like *:first-child* but only counts elements with the same tag name.
 - `:last-of-type` same as above except last.
 - `:only-of-type` same as *:only-child* except with the same limitation as *first-of-type*
-- `:nth-of-type` like *:nth-child* but only counts elements with the same tag name
-- `:nth-last-of-type` same as above excepts it counts from the bottom.
+- `:nth-of-type(n)` like *:nth-child* but only counts elements with the same tag name
+- `:nth-last-of-type(n)` same as above excepts it counts from the bottom.
 
 ### matching children selectors
 - `:first-match` like *:first-child* but only counts elements that match the selector part.
 - `:last-match` like *:first-match* except last
 - `:only-match` only matches if there are no other siblings that would match the selector part.
-- `:nth-match` same as *:nth-child* except it only counts elements that match the selector part.
-- `:nth-last-match` same as above except it counts from the bottom.
+- `:nth-match(n)` same as *:nth-child* except it only counts elements that match the selector part.
+- `:nth-last-match(n)` same as above except it counts from the bottom.
+
+Note that the match references only the selector part **before** the match pseudo. So `input:checked:first-match` would give you the first child input that is checked while `input:first-match:checked` would give you the first child input only if it is checked.
 
 ### input selectors
 - `:disabled` matches disabled inputs.
@@ -91,3 +111,5 @@ A huge part of Sen are pseudo selectors. Most of the CSS 3 pseudo selectors and 
 ### selectors depending on selectors
 - `:not(selector)` matches all elements that don't match the selector inside the brackets. This is a powerfull pseudo. You can put anything inside it to negate it. Here an example: `div:not(.notme)` would match any div that hasn't the class *notme*. Multible selectors, seperated by a comma, and even deep selectors are supported. `div:not(div > div, .notme)` would only match div's that aren't a child of a div and don't have the class *notme*. If one of those conditions match a div won't be in the list.
 - `:matches(selector)` matches all elements that match the selector. The selector for matches has the same rules as the selector for not: none. You can make any condition you want. You could do this for example: `:enabled:matches(input:matches([type=text], [type=password]), textarea)` to get all textinputs that are enabled.
+
+For those who are used to `:eq`, `:lt`, `:gt` etc. should learn basic JavaScript. Just use `select( "selector" ).slice( startindex, endinex )`. For jQuery itself it's a little harder of course but for arrays this is the fastest way.
