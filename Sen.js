@@ -756,7 +756,7 @@ var parseFuncs = {
 
 		// add the class to the class list
 		part.cls.push( unescapeUse(segment[1]) );
-		// getElementMethodCount will be set later
+		// getElementMethodCount will be set later beacuse we can check multible classes with it
 	},
 	/**
 	 * This is the parser function for attributes
@@ -781,6 +781,8 @@ var parseFuncs = {
 		// if this attribute selector is supported rebuild it and add it to full
 		if (nativeSelector && (!mod || attrFullSupported)) {
 			selector.string += "[" + segment[1] + (hasValue ? (type + '=' + (isInQuotes ? value : '"' + value + '"') + (mod || "")) : "") + "]";
+			// use the native selector
+			part.prefereNativeSelector = true;
 		// else this selector can't be done fully natively
 		} else selector.fullsupport = false;
 
@@ -797,8 +799,6 @@ var parseFuncs = {
 			));
 			
 		}
-		// use the native selector
-		part.prefereNativeSelector = true;
 	},
 	/**
 	 * This is the parser function for pseudo selectors
@@ -830,12 +830,12 @@ var parseFuncs = {
 
 		// selector isn't natively supported
 		} else {
-			selector.fullsupport = false;
-			// if there is a getter in the pseudo
+			// if there is a getter in the pseudo this part should be get with it
 			if (pseudo["get"]) {
 				part.getter = pseudo["get"];
 				part.getterValue = pseudoObj;
 			}
+			selector.fullsupport = false;
 		}
 
 		// add the pseudo object to the selector
@@ -878,8 +878,8 @@ function selectorParse (selectString) {
 				 * @type {select.Part}
 				 */
 				var part = {
-					relation: "", elementName: "*", id: null, cls: [], attr: {}, pseudo: {}, hasToContain: null,
-					getElementMethodCount: 0, prefereNativeSelector: false, nativeFailed: false
+						relation: "", elementName: "*", id: null, cls: [], attr: {}, pseudo: {}, hasToContain: null,
+						getElementMethodCount: 0, prefereNativeSelector: false, nativeFailed: false
 				};
 				// variables for later
 				var isTarget, elementName, nextChar;
