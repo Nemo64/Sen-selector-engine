@@ -309,12 +309,12 @@ function clonePart (value, part) {
 		}
 	}
 	// now clone classes and attributes
-	newPart.cls  = part.cls.slice();
-	newPart.attr = part.attr.slice();
+	newPart.cls  = part.cls.concat();
+	newPart.attr = part.attr.concat();
 	// now clone pseudos
 	newPart.pseudo = {};
 	for (var name in part.pseudo) {
-		newPart.pseudo[name] = part.pseudo[name].slice();
+		newPart.pseudo[name] = part.pseudo[name].concat();
 	}
 	return /** @type {select.Part} */ newPart;
 }
@@ -331,14 +331,22 @@ function nthWithPart (value, part) {
 }
 /**
  * check if the element is focused.
- * @param {Node} node  the node to check
+ * @param {Node} element  the node to check
  * @return {boolean}
  */
-function hasFocus (node) {
-	var ownerDocument = node.ownerDocument;
-	return ownerDocument && ownerDocument.activeElement === node // the node has to be active
+function hasFocus (element) {
+	var ownerDocument = element.ownerDocument;
+	return ownerDocument && ownerDocument.activeElement === element // the element has to be active
 		&& (!focusCheckable || ownerDocument.hasFocus()) // the document needs to have focus
-		&& (node.type || node.href); // only use form elements
+		&& (element.type || element.href); // only use form elements
+}
+/**
+ * checks if an element is an candidate for range check
+ * @param {Node} element
+ * @return {boolean}
+ */
+function hasRange (element) {
+	return element.validity && (element.min !== "" || element.max !== "");
 }
 /**
  * Pseudo selector objects with all informations needed for the pseudo.
@@ -376,14 +384,14 @@ var pseudos = select["pseudo"] = {
 	// CHILDREN
 	"first-child": {
 		"each": function (element) {
-			while (element = element[prevSibling]) if (element.nodeType === 1) return false;
-			return true;
+			while ((element = element[prevSibling]) && element.nodeType !== 1) {} // if (element.nodeType === 1) return false;
+			return element == null;
 		}
 	},
 	"last-child": {
 		"each": function (element) {
-			while (element = element[nextSibling]) if (element.nodeType === 1) return false;
-			return true;
+			while ((element = element[nextSibling]) && element.nodeType !== 1) {}
+			return element == null;
 		}
 	},
 	"only-child": {
@@ -411,26 +419,20 @@ var pseudos = select["pseudo"] = {
 		"each": function (element) {
 			var name = element.nodeName;
 			// there is no need to check for nodeType because the nodeName wouldn't match
-			while (element = element[prevSibling]) if (element.nodeName === name) return false;
-			return true;
+			while ((element = element[prevSibling]) && element.nodeName !== name) {}
+			return element == null;
 		}
 	},
 	"last-of-type": {
 		"each": function (element) {
 			var name = element.nodeName;
-			while (element = element[nextSibling]) if (element.nodeName === name) return false;
-			return true;
+			while ((element = element[nextSibling]) && element.nodeName !== name) {}
+			return element == null;
 		}
 	},	
 	"only-of-type": {
 		"each": function (element) {
-			var children = element.parentNode[children];
-			var name = element.nodeName;
-			for (var i = 0; i < children.length; ++i) {
-				var child = children[i];
-				if (child.nodeName === name) return false;
-			}
-			return true;
+			return pseudos["first-of-type"]["each"]( element ) && pseudos["last-of-type"]["each"]( element );
 		}
 	},
 	"nth-of-type": {
@@ -454,15 +456,15 @@ var pseudos = select["pseudo"] = {
 	"first-match": {
 		"each": function (element, value) {
 			// here we have to check the nodeType because selectorTest doesn't and always returns true on universal selectors
-			while (element = element[prevSibling]) if (element.nodeType === 1 && selectorTest( element, value )) return false;
-			return true;
+			while ((element = element[prevSibling]) && (element.nodeType !== 1 || !selectorTest( element, value ))) {}
+			return element == null;
 		},
 		"pre": clonePart
 	},
 	"last-match": {
 		"each": function (element, value) {
-			while (element = element[nextSibling]) if (element.nodeType === 1 && selectorTest( element, value )) return false;
-			return true;
+			while ((element = element[nextSibling]) && (element.nodeType !== 1 || !selectorTest( element, value ))) {}
+			return element == null;
 		},
 		"pre": clonePart
 	},
@@ -524,6 +526,51 @@ var pseudos = select["pseudo"] = {
 			var element = ownerDocument.activeElement;
 			return hasFocus( element ) ? [element] : [];
 		}
+	},
+	"valid": {
+		"each": function (element) {
+			return element.validity && element.validity.valid;
+		}
+	},
+	"invalid": {
+		"each": function (element) {
+			return element.validity && !element.validity.valid;
+		}
+	},
+	"required": {
+		"each": function (element) {
+			return element.required;
+		}
+	},
+	"optional": {
+		"each": function (element) {
+			return !element.required;
+		}
+	},
+	"in-range": {
+		"each": function (element) {
+			return hasRange( element ) && !element.validity.rangeOverflow && !element.validity.rangeUnderflow
+		}
+	},
+	"out-of-range": {
+		"each": function (element) {
+			return hasRange( element ) && (element.validity.rangeOverflow || element.validity.rangeUnderflow)
+		}
+	},
+	"read-write": {
+		"each": function (element) {
+			var parent = element;
+			while (parent.contentEditable === "inherit" && (parent = parent.parentNode)) {}
+			return (parent && parent.contentEditable) || !element.readOnly;
+			// the specs don't say much but all browsers that support this here see disabled inputs as writeable
+		},
+		vendorNames: ["-moz-read-write"]
+	},
+	"read-only": {
+		"each": function (element) {
+			return !pseudos["read-write"]["each"]( element );
+		},
+		vendorNames: ["-moz-read-only"]
 	},
 
 	// INNER ELEMENTS
@@ -599,7 +646,7 @@ var pseudos = select["pseudo"] = {
 ///////////////////
 
 // some browser behaviors
-var tagNameReturnsComments = true; // getElementsByTagName("*") returns comments in ie
+var tagNameReturnsComments = testDiv.getElementsByTagName("*").length > 1; // getElementsByTagName("*") returns comments in ie
 var attrFullSupported = false; // insensitive attribute selections
 var targetSupported = false; // selector target support
 
@@ -689,9 +736,6 @@ if (classSelector) {
 	}
 }
 
-// check if getElementsByTagName returns comments
-tagNameReturnsComments = testDiv.getElementsByTagName("*").length > 1;
-
 // destroy testDiv to release memory
 testDiv = null;
 
@@ -732,12 +776,9 @@ var parseFuncs = {
 	 * @param {select.Selector} selector
 	 */
 	"#": function (part, getSegment, selector) {
-		// multible id's result into an impossible selector
-		if (part.id != null) throw false;
-
 		// get the id out of the selector
 		var segment = getSegment( RxId, true );
-		if (!segment[1]) throw "invalid id";
+		if (!segment[1] || part.id != null) throw "invalid id";
 
 		part.id = unescapeUse( segment[1] ); // unescape the id and return it
 		selector.idPart = selector.length - 1; // tell that this part has the last id in the selector
@@ -1181,7 +1222,9 @@ function selectorTest (element, part) {
  * @return {boolean} True if selector matches.
  */
 function selectorMatch (selectors, sourceElement, origins) {
-	var checkUntil = origins != null ? -1 : 0;
+	// we have to check the origin if we have one
+	var checkUntil = origins != null && origins.length ? -1 : 0;
+	// loop the selectors
 	for (var i = 0; i < selectors.length; ++i) {
 		var selector = selectors[i];
 		var s = selector.length;
@@ -1228,7 +1271,7 @@ function selectorMatch (selectors, sourceElement, origins) {
 			// remember the last relation
 			if (part) lastRel = part.relation;
 		}
-		if (matches) return matches;
+		if (matches) return true;
 	}
 	return false;
 }
