@@ -100,6 +100,8 @@ Note that the match references only the selector part **before** the match pseud
 - `:indeterminate` matches checkboxes that are indeterminate.
 - `:checked` matches checkboxes that are checked and options that are selected.
 - `:focus` matches elements that have the focus.
+- `:read-write` matches elements that are editable by the user. These are inputs that aren't marked as readOnly and any element which has the contenteditable attribute
+- `:read-only` matches all elements that don't match `:read-write`
 
 ### other selectors
 - `:empty` matches elements that have nothing inside them. that you can give multiple selectors like *:matches(.foo, .bar)*.
@@ -113,3 +115,49 @@ Note that the match references only the selector part **before** the match pseud
 - `:matches(selector)` matches all elements that match the selector. The selector for matches has the same rules as the selector for not: none. You can make any condition you want. You could do this for example: `:enabled:matches(input:matches([type=text], [type=password]), textarea)` to get all textinputs that are enabled.
 
 For those who are used to `:eq`, `:lt`, `:gt` etc. should learn basic JavaScript. Just use `select( "selector" ).slice( startindex, endinex )`. For jQuery itself it's a little harder of course but for arrays this is the fastest way.
+
+### note on pseudos
+Emulating pseudos often means to check every element if it is the element you search for. This is slow! If you already know which element type you search ALWAYS include one. `div:first-child` is much faster that just `:first-child` because getElementsByTagName can be used in older browsers. Even `:matches(div, span):first-child` would be faster than the universal version.
+
+###make own pseudos
+This is an often overlooked bonus. Let's say you create a Formular and have to look for empty input fields you can of curse do this:
+```javascript
+var inputs = select( "input, textarea" );
+for (var i = 0; i < inputs.length; ++i) {
+    input = inputs[i];
+    if ("value" in input && input.value.replace(/^\s+|\s+$/, "").length === 0) {
+        // do something with the empty input
+    }
+}
+```
+
+But you could also make a pseudo like this:
+```javascript
+select.pseudo["empty-value"] = {
+    each: function (element) {
+        return "value" in element && element.value.replace(/^\s+|\s+$/, "".length === 0;
+    }
+};
+```
+
+... and than use it like this:
+```javascript
+var inputs = select( ":matches(input, textarea):empty-value" )
+```
+
+... nice and reusable. There are more properties you can set for a pseudo.
+
+- `each` is the one shown above. It gets called for each element and has to exist for each pseudo you create. Two arguments are given: 
+ - The first is the Element to check.
+ - The second is a value that may be given in brackets after the pseudo as a string or the value returned from `pre` if defined.
+
+- `get` is only called if the pseudo is in the last part of the selector. It has to return an array (or NodeList) of found elements.
+This method is for example very useful on the focus pseudo. We already know which element could have the focus with `document.activeElement` so instead of searching the entire DOM just the activeElement will be checked for focus. The `each` method will still be called aferwards so this doesn't have to return a precise result. The arguments this method gets are:
+ - The value this pseudos was called with
+ - The document to search on (don't use the global document variable or you use frame compatibility)
+ - The element to search on. Can be ignored because it will be checked afterwards. But you could execute getElementsByTagName on it.
+
+- `pre` can be a method that will be executed while the selector is parsed. It should return a value that will be passed to the other function as value. Example: This is used for all the nth pseudos to parse the abstract value into an object. This method only gets one argument:
+ - the unparsed value (can also be empty if there is non given)
+
+Note: the `pre` method will be called inside a `try ... catch` statement. If the value isn't what you want just throw a string with the message and the `select` function will throw an SyntaxError with more informations. If the value is valid but will never match any element throw false and the current selector won't be executed.

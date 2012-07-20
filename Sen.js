@@ -341,14 +341,6 @@ function hasFocus (element) {
 		&& (element.type || element.href); // only use form elements
 }
 /**
- * checks if an element is an candidate for range check
- * @param {Node} element
- * @return {boolean}
- */
-function hasRange (element) {
-	return element.validity && (element.min !== "" || element.max !== "");
-}
-/**
  * Pseudo selector objects with all informations needed for the pseudo.
  * The each method gets called on every element that has to be checked with the pseudo.
  * The get method only gets called if the pseudo is in the last part of a selector and not supported by the browser. (optional)
@@ -527,36 +519,7 @@ var pseudos = select["pseudo"] = {
 			return hasFocus( element ) ? [element] : [];
 		}
 	},
-	"valid": {
-		"each": function (element) {
-			return element.validity && element.validity.valid;
-		}
-	},
-	"invalid": {
-		"each": function (element) {
-			return element.validity && !element.validity.valid;
-		}
-	},
-	"required": {
-		"each": function (element) {
-			return element.required;
-		}
-	},
-	"optional": {
-		"each": function (element) {
-			return !element.required;
-		}
-	},
-	"in-range": {
-		"each": function (element) {
-			return hasRange( element ) && !element.validity.rangeOverflow && !element.validity.rangeUnderflow
-		}
-	},
-	"out-of-range": {
-		"each": function (element) {
-			return hasRange( element ) && (element.validity.rangeOverflow || element.validity.rangeUnderflow)
-		}
-	},
+	// WARNING: read-write and read-only are mostly untested
 	"read-write": {
 		"each": function (element) {
 			var parent = element;
