@@ -3,6 +3,8 @@
 This here is a JavaScript CSS selector engine that was build with the querySelector API in mind. That means that as much work as possible will be put onto the browsers selector engine and only the missing features will be emulated (if any).
 
 ## Why use it?
+**Actually don't!** This here was an experiment to get a feel what it takes to create a simple parser for css selectors. Even though it should mostly work it isn't tested to the core and might fail randomly. Prefere using jQuery ;)
+
 Ever had that problem that a specific selector would make your life simpler but you didn't want to sacrifice the querySelector on older browsers. This is for you than. Take this example:
 
 `a:first-of-type:any-link` isn't supported in any browser yet because `any-link` is planed for css4. What does Sen do? It checks if the pseudos are supported and than create a query matching to your current browser.
